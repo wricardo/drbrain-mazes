@@ -1,0 +1,168 @@
+# Dr Brain - Mazes — LLM Guide
+
+Dr Brain - Mazes (the second game in the Dr Brain collection) is a tower-maze puzzle for humans
+and AI agents. A tower has one or more levels (floors); each level is a grid of round stone tiles
+over a void. You walk one tile at a time from START (always on level 0, the bottom) to FINISH
+(always on the top level), using stairs between levels and teleporting portal holes. Reach FINISH
+within the move limit to win. The tower is fogged: you only ever see the level you stand on.
+
+Humans: open {{.BaseURL}}/ , pick a map and walk with the arrow keys. Tutorial: {{.BaseURL}}/learn
+Spectate a session live: {{.BaseURL}}/watch/SESSION_ID
+
+GraphQL endpoint:       POST {{.BaseURL}}/graphql
+GraphQL subscriptions:  {{.WSURL}}/graphql  (graphql-ws protocol)
+Playground:             GET  {{.BaseURL}}/playground
+Introspection:          enabled unless the operator disabled it — query __schema/__type
+
+Every example below is valid against the live schema. Replace SESSION_ID with an id returned by
+createSession and MAP_ID with an id from the `maps` query.
+
+---
+
+## Rules
+
+- A session is one game on one map. The map is snapshotted when the session is created.
+- You move manually, one tile per move: UP, RIGHT, DOWN or LEFT. There is no program or timer.
+- A position is `{ level, x, y }`. `level` 0 is the bottom floor; `x` is the column; `y` is the
+  row, row 0 being the TOP row of a level (`y` grows DOWNWARD). UP = y-1, RIGHT = x+1,
+  DOWN = y+1, LEFT = x-1. Moves never change the level by themselves.
+- The start is always on level 0 and the finish always on the top level, so the goal level is
+  `levelCount - 1`. Every level has the same width and height.
+
+### Fog: you only see the level you stand on
+
+- `maps` / `map` return the public catalog: `levelCount`, `width`, `height`, `maxMoves`,
+  `parMoves` and `preview` (the glyph rows of level 0, where every game starts). They never
+  contain other levels, the finish position or portal twins. There is no whole-map query for
+  players.
+- A session carries `view`: `{ level, levelCount, rows, portals }` for the level you are on right
+  now. Read it after every move; it changes when stairs or a portal take you to another level.
+  `rows` is a list of row strings using these glyphs:
+
+| glyph | tile                                                                              |
+|-------|-----------------------------------------------------------------------------------|
+| `.`   | void: not walkable                                                                |
+| `o`   | stone: walkable                                                                   |
+| `S`   | start: walkable, the only one, on level 0                                         |
+| `F`   | finish: walkable, the only one, on the top level; stepping on it wins            |
+| `U`   | stairs up: stepping on it lifts you to the SAME x,y on level+1                    |
+| `D`   | stairs down: stepping on it drops you to the SAME x,y on level-1                  |
+| `1`-`9` | portal hole: each digit appears exactly twice on the whole tower; stepping on one teleports you to its twin |
+
+- `view.portals` lists the holes on the viewed level: `glyph`, `a` (the hole on this level) and
+  `b`, which is set only when the twin is on this same level. Otherwise `b` is null: the twin is
+  on a level you cannot see (it may be above or below), and you learn where it is by stepping on
+  the hole and arriving there.
+- Stairs are paired: every `U` at level l (x,y) has a `D` at level l+1 (x,y) and vice versa.
+  Stepping on a stairs tile takes you to the same x,y of the adjacent level and you LAND ON the
+  matching arrow there (never on `S`, `F` or plain stone). Effects never chain: arriving on the
+  paired stairs or on a portal's twin hole does not trigger it. To use it you step off and back
+  on again, so wherever you can go up you can also go back down from the same x,y. A stairs tile
+  can never be crossed as a corridor: stepping on it always takes it.
+- A move into void or off the edge is BLOCKED: nothing happens and it is NOT counted
+  (`lastEvent.blocked: true`). Every successful move counts, including stairs and portal moves.
+- Win: stepping on `F`. Lose: `state.moves` reaches the map's `maxMoves` without winning
+  (`lossReason: MOVE_LIMIT`). A win on the last allowed move still wins.
+- `parMoves` is the shortest possible winning route (null if the finish is unreachable). Compare
+  `state.moves` or `bestMoves` with it.
+- `status`: READY (no counted move yet), PLAYING, WON, LOST. WON/LOST sessions refuse further
+  moves (`SESSION_TERMINAL`) until `reset`.
+- `reset` puts you back on the start; `attempts` (finished games) and `bestMoves` (fewest moves
+  in a won game, null before the first win) are kept.
+
+### Move events
+
+`lastEvent` describes the last attempt: `move` (counted-move index), `direction`, `from`,
+`stepped` (tile entered), `to` (final tile after stairs/portal), `blocked`, `via`
+(NONE, WALK, STAIRS_UP, STAIRS_DOWN, PORTAL), `status`, `lossReason`. A blocked attempt still
+bumps the session `seq` so watchers see it. `state.path` lists every tile you entered, in order.
+
+### Errors
+
+Errors carry `extensions.code`: NOT_FOUND, SESSION_TERMINAL, INVALID_ARGUMENT, FORBIDDEN,
+LIMIT_REACHED. Admin operations (map editing, `adminMap`) need an `X-Admin-Key` header and are not
+for players. At most 20000 directions per
+`bulkMove` or `simulate` call.
+
+---
+
+## Quick start
+
+1. List maps (public catalog, level 0 preview only):
+
+```graphql
+query { maps { id name difficulty width height levelCount preview maxMoves parMoves } }
+```
+
+2. Dry run without a session. `simulate` plays a list of moves from a fresh start (instant,
+   optional `includeEvents` for the full trace). It is the way to test moves without spending a
+   session; it reports positions and `via`, not the unseen layout.
+
+```graphql
+query {
+  simulate(mapID: "MAP_ID", moves: [UP, RIGHT, RIGHT, DOWN], includeEvents: true) {
+    status lossReason moves
+    finalState { pos { level x y } moves status path { level x y } }
+    events { move direction from { level x y } to { level x y } blocked via status }
+  }
+}
+```
+
+3. Create a session and read the level you start on:
+
+```graphql
+mutation { createSession(mapID: "MAP_ID", displayName: "my agent") { id state { pos { level x y } status } view { level levelCount rows portals { glyph a { level x y } b { level x y } } } map { maxMoves parMoves } } }
+```
+
+4. Move one tile at a time and read the new `view` (it changes level on stairs and portals):
+
+```graphql
+mutation { move(sessionID: "SESSION_ID", direction: RIGHT) { seq state { pos { level x y } moves status lossReason } view { level rows portals { glyph a { level x y } b { level x y } } } lastEvent { blocked via stepped { level x y } to { level x y } } } }
+```
+
+5. Or send several moves at once (stops early once the game is WON or LOST; blocked moves are
+   skipped, `lastEvent` is the last attempt; you only get the final `view`):
+
+```graphql
+mutation { bulkMove(sessionID: "SESSION_ID", directions: [RIGHT, RIGHT, DOWN]) { state { pos { level x y } moves status } view { level rows } bestMoves attempts } }
+```
+
+6. Start over, or read / watch the session:
+
+```graphql
+mutation { reset(sessionID: "SESSION_ID") { state { status moves } view { level rows } attempts bestMoves } }
+```
+
+```graphql
+query { session(id: "SESSION_ID") { seq attempts bestMoves view { level levelCount rows } state { pos { level x y } moves status lossReason path { level x y } } lastEvent { blocked via } } }
+```
+
+```graphql
+subscription { sessionUpdated(sessionID: "SESSION_ID") { seq event { move direction blocked via } session { view { level rows } state { pos { level x y } moves status } } } }
+```
+
+The subscription emits the current snapshot immediately, then every change. Every update is a
+full snapshot; ignore updates whose `seq` is not greater than the last one you saw.
+
+Other session calls: `renameSession(id, displayName)`, `deleteSession(id)`. Query
+`sessions(sort: RECENT, limit: 50, mapId: "...")` lists sessions.
+
+---
+
+## Tips
+
+- Keep your own map of what you have seen: after each move store `view.rows` under
+  `view.level`, and the portal ends you have used. Levels you have not visited are unknown.
+- Explore with a search over states `(level, x, y)`: a neighbour is reached by one move; if the
+  tile entered is `U`, `D` or a portal hole, the state after the move is the landing tile (same
+  x,y one level up/down, or the twin hole, whose location you only learn by arriving).
+- Head for the top level (`levelCount - 1`): the finish is there. A `U` tile on the level you are
+  on leads one level up at the same x,y, where you land on a `D`; step off and on to come back.
+- Void tiles and the map edge are free walls: probing them costs nothing (but they do appear as
+  blocked events).
+- Use `simulate` to test a sequence of moves from a fresh start before you spend a session. It
+  does not reveal layouts, only where the moves end up.
+- After stairs or a portal, `state.pos` is the landing tile (the paired arrow or the twin hole)
+  and you may leave it in any direction without bouncing back; `state.path` records both the
+  tile you stepped on and the landing tile.
+- `parMoves` is the minimum, so matching it is an optimal run.

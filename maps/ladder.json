@@ -1,0 +1,30 @@
+{
+  "id": "ladder",
+  "name": "Ladder",
+  "description": "Three short levels. Climb a staircase at the end of each one.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "Sooo.",
+      "...o.",
+      "...oU",
+      ".....",
+      "....."
+    ],
+    [
+      ".U...",
+      ".o...",
+      ".oooD",
+      ".....",
+      "....."
+    ],
+    [
+      ".D...",
+      ".o...",
+      ".ooo.",
+      "...o.",
+      "...F."
+    ]
+  ],
+  "max_moves": 100
+}

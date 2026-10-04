@@ -1,0 +1,16 @@
+{
+  "id": "first_steps",
+  "name": "First Steps",
+  "description": "One level, no tricks: walk from S to F. Void cells are walls.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "Soo...",
+      "..o...",
+      "..ooo.",
+      "....o.",
+      ".ooooF",
+      ".o...."
+    ]
+  ]
+}

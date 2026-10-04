@@ -1,0 +1,220 @@
+scalar Time
+
+enum Direction {
+  UP
+  RIGHT
+  DOWN
+  LEFT
+}
+
+enum Status {
+  READY
+  PLAYING
+  WON
+  LOST
+}
+
+enum LossReason {
+  MOVE_LIMIT
+}
+
+"How a move changed the position."
+enum Via {
+  "Blocked by void or the edge: nothing happened and the move is not counted."
+  NONE
+  WALK
+  STAIRS_UP
+  STAIRS_DOWN
+  PORTAL
+}
+
+enum SessionSort {
+  RECENT
+  CREATED
+}
+
+"A tile coordinate in the tower. level 0 is the bottom; x = column, y = row (row 0 on top)."
+type Position {
+  level: Int!
+  x: Int!
+  y: Int!
+}
+
+"""
+Two linked holes sharing a glyph digit ('1'..'9'); stepping on one teleports you to the other.
+In a LevelView only the ends on that level are listed: `a` is always on the viewed level and
+`b` is set only when the twin is on the same level (otherwise the twin's location is hidden).
+"""
+type Portal {
+  glyph: String!
+  a: Position!
+  b: Position
+}
+
+"""
+Public catalog entry. The start is always on level 0 and the finish on the top level
+(levelCount - 1). Layouts of other levels are hidden: players discover them by playing.
+"""
+type Map {
+  id: ID!
+  name: String!
+  description: String!
+  difficulty: String!
+  width: Int!
+  height: Int!
+  levelCount: Int!
+  "Glyph rows of level 0, the level every game starts on."
+  preview: [String!]!
+  maxMoves: Int!
+  "Length of the shortest winning route; null if the finish is unreachable."
+  parMoves: Int
+}
+
+"Full map for the editor (admin only)."
+type AdminMap {
+  id: ID!
+  name: String!
+  description: String!
+  difficulty: String!
+  width: Int!
+  height: Int!
+  levelCount: Int!
+  """
+  Layout glyphs per level (index 0 = bottom), each a list of rows.
+  . void, o stone, S start, F finish, U stairs up, D stairs down, 1-9 portal holes.
+  """
+  levels: [[String!]!]!
+  start: Position!
+  finish: Position!
+  portals: [Portal!]!
+  maxMoves: Int!
+  parMoves: Int
+}
+
+"""
+What a player can see: one level only. Rows use the layout glyphs
+(. void, o stone, S start, F finish, U stairs up, D stairs down, 1-9 portal holes).
+Stairs lead to the same x,y on level+1 (U) or level-1 (D).
+"""
+type LevelView {
+  "The level the player is on (0 = bottom)."
+  level: Int!
+  levelCount: Int!
+  rows: [String!]!
+  portals: [Portal!]!
+}
+
+type GameState {
+  pos: Position!
+  "Counted moves so far (blocked attempts are free)."
+  moves: Int!
+  status: Status!
+  lossReason: LossReason
+  "Every tile entered, in order, starting with the start tile. Stairs and portal moves add the tile stepped on and the landing tile."
+  path: [Position!]!
+}
+
+type MoveEvent {
+  "Counted-move index after this attempt (unchanged when blocked)."
+  move: Int!
+  direction: Direction!
+  from: Position!
+  "The tile entered by the step; equals from when blocked."
+  stepped: Position!
+  "Final position after stairs/portal; equals from when blocked."
+  to: Position!
+  blocked: Boolean!
+  via: Via!
+  status: Status!
+  lossReason: LossReason
+}
+
+type Session {
+  id: ID!
+  displayName: String!
+  mapId: ID!
+  "Catalog entry of the map this session plays. Reveals nothing beyond the start level."
+  map: Map!
+  "Fog: the only part of the map a player can see, the level the player stands on right now."
+  view: LevelView!
+  state: GameState!
+  "Increments on every state change; clients ignore updates with seq <= last seen."
+  seq: Int!
+  createdAt: Time!
+  lastActionAt: Time!
+  "Games finished (won or lost) in this session."
+  attempts: Int!
+  "Fewest moves in a won game of this session."
+  bestMoves: Int
+  lastEvent: MoveEvent
+}
+
+type SessionUpdate {
+  seq: Int!
+  session: Session!
+  event: MoveEvent
+}
+
+type SimulationResult {
+  status: Status!
+  lossReason: LossReason
+  moves: Int!
+  finalState: GameState!
+  events: [MoveEvent!]
+}
+
+type MapValidationIssue {
+  message: String!
+}
+
+type MapValidationResult {
+  valid: Boolean!
+  issues: [MapValidationIssue!]!
+  "Set when the map parses but the finish cannot be reached from the start."
+  finishReachable: Boolean!
+  parMoves: Int
+}
+
+input MapInput {
+  id: ID!
+  name: String!
+  description: String
+  difficulty: String
+  levels: [[String!]!]!
+  maxMoves: Int
+}
+
+type Query {
+  "Public catalog. Never exposes layouts beyond the start level (see Map.preview)."
+  maps: [Map!]!
+  map(id: ID!): Map
+  "Admin (X-Admin-Key): the full layout of every level, for the map editor."
+  adminMap(id: ID!): AdminMap
+  session(id: ID!): Session
+  sessions(sort: SessionSort = RECENT, limit: Int = 50, mapId: ID): [Session!]!
+  "Plays directions from a fresh start without a session. Directions after WON/LOST are ignored."
+  simulate(mapID: ID!, moves: [Direction!]!, includeEvents: Boolean = false): SimulationResult!
+}
+
+type Mutation {
+  createSession(mapID: ID!, displayName: String): Session!
+  deleteSession(id: ID!): Boolean!
+  renameSession(id: ID!, displayName: String!): Session!
+  "One move. A blocked attempt succeeds but changes nothing (lastEvent.blocked)."
+  move(sessionID: ID!, direction: Direction!): Session!
+  "Several moves in order; stops early once the game is WON or LOST."
+  bulkMove(sessionID: ID!, directions: [Direction!]!): Session!
+  "Back to the start of the same map; keeps attempts and bestMoves."
+  reset(sessionID: ID!): Session!
+
+  "Admin (X-Admin-Key) mutations."
+  createMap(map: MapInput!): AdminMap!
+  updateMap(map: MapInput!): AdminMap!
+  deleteMap(id: ID!): Boolean!
+  validateMap(map: MapInput!): MapValidationResult!
+}
+
+type Subscription {
+  "Emits the current snapshot immediately, then every change."
+  sessionUpdated(sessionID: ID!): SessionUpdate!
+}

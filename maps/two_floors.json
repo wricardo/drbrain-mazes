@@ -1,0 +1,25 @@
+{
+  "id": "two_floors",
+  "name": "Two Floors",
+  "description": "Step on a blue up arrow to climb a level. You land on the matching red arrow, so any staircase also takes you back down. Not every staircase is worth taking.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "Sooo..",
+      "...o..",
+      ".ooooU",
+      ".o....",
+      ".oo...",
+      ".ooooU"
+    ],
+    [
+      "F.....",
+      "o.....",
+      "o..ooD",
+      "o..o.o",
+      "oooo.o",
+      ".....D"
+    ]
+  ],
+  "max_moves": 100
+}

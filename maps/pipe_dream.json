@@ -1,0 +1,17 @@
+{
+  "id": "pipe_dream",
+  "name": "Pipe Dream",
+  "description": "Stepping on a glowing hole sends you through the pipe to the hole of the same color.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "So1....",
+      ".......",
+      ".3ooo2F",
+      "...o...",
+      "...1oo.",
+      ".......",
+      ".2oo3.."
+    ]
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "id": "tower_maze",
+  "name": "Tower Maze",
+  "description": "Three levels of corridors. Every staircase works both ways, and dead ends hide the ones that matter. Some lead nowhere.",
+  "difficulty": "medium",
+  "levels": [
+    [
+      "Soo.ooo",
+      "..o.o.o",
+      "U.ooo.o",
+      "o.....o",
+      "ooooU.o",
+      "o.o...o",
+      "o.ooooo"
+    ],
+    [
+      "Uoo.Uoo",
+      "..o...o",
+      "D.ooooo",
+      "o.....o",
+      "ooooD.o",
+      "o.....o",
+      "ooooooo"
+    ],
+    [
+      "Doo.Doo",
+      "..o...o",
+      "F.ooooo",
+      "o.....o",
+      "o.ooooo",
+      "o.o....",
+      "ooooooo"
+    ]
+  ],
+  "max_moves": 250
+}

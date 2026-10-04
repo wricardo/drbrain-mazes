@@ -1,0 +1,24 @@
+{
+  "id": "lost_garden",
+  "name": "Lost Garden",
+  "description": "One big level and no tricks. The only way out is through every wrong turn.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "Soooo.ooooooo",
+      "....o.o.....o",
+      "ooo.o.ooooo.o",
+      "o.o.o.....o.o",
+      "o.ooo.ooooo.o",
+      "o.....o.....o",
+      "ooooo.o.ooo.o",
+      "....o.o...o.o",
+      "ooooo.ooo.ooo",
+      "o.......o.o..",
+      "o.ooooooo.ooo",
+      "o...o.......o",
+      "ooooo.Foooooo"
+    ]
+  ],
+  "max_moves": 400
+}

@@ -1,0 +1,36 @@
+{
+  "id": "portal_climb",
+  "name": "Portal Climb",
+  "description": "Three levels, one staircase between each, and pipes that jump across levels.",
+  "difficulty": "medium",
+  "levels": [
+    [
+      "Soooooo",
+      "......o",
+      "ooooU.o",
+      "o.....o",
+      "ooo.ooo",
+      "o.o.o..",
+      "2.oooo2"
+    ],
+    [
+      "Uoo.ooo",
+      "..o.o.o",
+      "ooo.D.o",
+      "o.....o",
+      "o.1oooo",
+      "o...o.o",
+      "ooooo.1"
+    ],
+    [
+      "Doooooo",
+      "......o",
+      "ooooo.o",
+      "o...o.o",
+      "o.ooo.o",
+      "o.o...o",
+      "F.ooooo"
+    ]
+  ],
+  "max_moves": 350
+}

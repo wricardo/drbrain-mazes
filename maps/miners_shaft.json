@@ -1,0 +1,69 @@
+{
+  "id": "miners_shaft",
+  "name": "Miner's Shaft",
+  "description": "Six levels of cave. Blue arrows climb and land you on the matching red arrow, glowing holes of the same color are joined by a pipe. Level 2 is the classic board: the quick ways up are traps, so follow the pipes.",
+  "difficulty": "hard",
+  "levels": [
+    [
+      "Sooooooo",
+      "o..U.U.o",
+      "o......o",
+      "oU.....o",
+      "ooU....U",
+      "o.......",
+      "ooooooo.",
+      "o.....U."
+    ],
+    [
+      "1o2.....",
+      "...D.Doo",
+      "3o.o...o",
+      ".D.....o",
+      "3.D..U.D",
+      "oUo..o..",
+      "....ooo.",
+      "2oU.1.D."
+    ],
+    [
+      "........",
+      "........",
+      ".o.Uoo.U",
+      ".o...o.o",
+      ".o...D.o",
+      ".D.....o",
+      ".......o",
+      "..Dooooo"
+    ],
+    [
+      "oooooooo",
+      "o......o",
+      "o..D...D",
+      "o..o...o",
+      "U..oo..o",
+      "........",
+      "........",
+      "........"
+    ],
+    [
+      "........",
+      "........",
+      "........",
+      ".......U",
+      "D......o",
+      "o......o",
+      "o..U...o",
+      "oooooooo"
+    ],
+    [
+      "oooooooo",
+      "o......o",
+      "o......o",
+      "F......D",
+      "........",
+      "...oo...",
+      "...D....",
+      "........"
+    ]
+  ],
+  "max_moves": 300
+}

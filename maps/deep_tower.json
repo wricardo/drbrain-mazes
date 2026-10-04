@@ -1,0 +1,64 @@
+{
+  "id": "deep_tower",
+  "name": "Deep Tower",
+  "description": "Five levels, two pipes and plenty of staircases that only take you somewhere you have already been. Find the way to the top.",
+  "difficulty": "hard",
+  "levels": [
+    [
+      "S.Uoooooo",
+      "o...o...o",
+      "ooo.U.ooo",
+      "..o...o.o",
+      "o.o.ooo.o",
+      "o.o.o...o",
+      "o.o.o.o.o",
+      "o.o.o.o.o",
+      "ooooo.ooo"
+    ],
+    [
+      "U.Doooooo",
+      "o...o.o..",
+      "ooo.D.ooo",
+      "..o...o.o",
+      "2.ooo.1.o",
+      "o...o...o",
+      "ooo.ooo.o",
+      "o.o...o.o",
+      "U.ooooooo"
+    ],
+    [
+      "D.Uoooooo",
+      "o.......o",
+      "ooooo.ooo",
+      "....o.o.o",
+      "ooo.ooo.o",
+      "o.o.....o",
+      "o.oo2.ooo",
+      "o.o...o..",
+      "D.ooooooU"
+    ],
+    [
+      "U.Doooooo",
+      "o...o...o",
+      "ooo.ooo.1",
+      "..o...o..",
+      "o.ooo.ooo",
+      "o...o...o",
+      "ooo.o.ooo",
+      "o.o.o.o.o",
+      "U.ooooo.D"
+    ],
+    [
+      "D.Foooooo",
+      "o.......o",
+      "ooooooo.o",
+      "......o.o",
+      "ooooo.ooo",
+      "o...o...o",
+      "o.ooooo.o",
+      "o.o.....o",
+      "D.ooooooo"
+    ]
+  ],
+  "max_moves": 400
+}

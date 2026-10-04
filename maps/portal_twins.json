@@ -1,0 +1,19 @@
+{
+  "id": "portal_twins",
+  "name": "Portal Twins",
+  "description": "Glowing holes of the same color are joined. Step in one and you come out of the other, then keep going.",
+  "difficulty": "easy",
+  "levels": [
+    [
+      "So1.....",
+      "........",
+      ".....1oo",
+      ".......o",
+      ".......2",
+      ".2oo....",
+      "...o....",
+      "...3..3F"
+    ]
+  ],
+  "max_moves": 100
+}

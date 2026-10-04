@@ -1,0 +1,24 @@
+{
+  "id": "wormholes",
+  "name": "Wormholes",
+  "description": "A big maze with three pipes. A pipe can save you a long walk, or send you back to the start of it.",
+  "difficulty": "medium",
+  "levels": [
+    [
+      "S.ooooo.ooooo",
+      "o.o...o.o...o",
+      "o.o.3.o.o.ooo",
+      "o.o.o.o.o.o..",
+      "o.o.o.ooo.o.1",
+      "o.o.o.....o.o",
+      "ooo.ooooo.o.o",
+      "....o.o.o.o.o",
+      "ooooo.o.3.ooo",
+      "o.....o.....o",
+      "ooo.2.ooo.ooo",
+      "..o.o...o.o..",
+      "2oooooF.oooo1"
+    ]
+  ],
+  "max_moves": 350
+}

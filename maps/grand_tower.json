@@ -1,0 +1,75 @@
+{
+  "id": "grand_tower",
+  "name": "Grand Tower",
+  "description": "Six levels, three pipes and staircases everywhere. Only a few of them are the way up.",
+  "difficulty": "hard",
+  "levels": [
+    [
+      "S.3oooooU",
+      "o...o.o..",
+      "ooo.U.ooo",
+      "..o.....o",
+      "3.o.ooo.o",
+      "o.o.o.o.o",
+      "o.ooo.o.o",
+      "o.....o.o",
+      "ooooooooo"
+    ],
+    [
+      "U.ooooooD",
+      "o.o...o..",
+      "o.ooD.ooo",
+      "o.......o",
+      "o.ooooo.o",
+      "o.o...o.o",
+      "ooo.o.ooo",
+      "....o...o",
+      "Uoooooooo"
+    ],
+    [
+      "D.ooooooU",
+      "o...o.o..",
+      "ooo.U.ooo",
+      "..o.....o",
+      "o.ooooooo",
+      "o.......o",
+      "ooo.ooo.o",
+      "o.o.o.o.o",
+      "D.ooo.ooo"
+    ],
+    [
+      "Uoo.ooooD",
+      "..o.o.o..",
+      "2.o.D.ooo",
+      "o.o.....o",
+      "o.ooo.ooo",
+      "o...o.o.o",
+      "o.ooo.o.o",
+      "o.o...o.o",
+      "ooooooo.U"
+    ],
+    [
+      "Doooooo.o",
+      "......o.o",
+      "ooooU.o.o",
+      "o.....o.o",
+      "ooooo.ooo",
+      "o...o...o",
+      "o.U.ooooo",
+      "o.o......",
+      "ooooooooD"
+    ],
+    [
+      "1.Foooooo",
+      "o...o.o.o",
+      "ooo.D.o.2",
+      "..o...o..",
+      "1.ooo.ooo",
+      "o...o...o",
+      "ooD.ooo.o",
+      "o.....o.o",
+      "ooooooooo"
+    ]
+  ],
+  "max_moves": 500
+}
