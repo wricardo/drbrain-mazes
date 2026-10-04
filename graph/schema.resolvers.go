@@ -53,8 +53,8 @@ func (r *mutationResolver) Move(ctx context.Context, sessionID string, direction
 }
 
 // BulkMove is the resolver for the bulkMove field.
-func (r *mutationResolver) BulkMove(ctx context.Context, sessionID string, directions []model.Direction) (*model.Session, error) {
-	s, err := r.Service.BulkMove(sessionID, fromDirections(directions))
+func (r *mutationResolver) BulkMove(ctx context.Context, sessionID string, directions []model.Direction, stopOnBlocked *bool) (*model.Session, error) {
+	s, err := r.Service.BulkMove(sessionID, fromDirections(directions), stopOnBlocked == nil || *stopOnBlocked)
 	if err != nil {
 		return nil, toGQLError(err)
 	}

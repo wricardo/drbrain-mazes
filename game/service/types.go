@@ -85,11 +85,12 @@ type GameService interface {
 	// nothing in the game state but still bumps Seq, sets LastEvent (Blocked)
 	// and is broadcast so UIs can animate the bump. Errors: SESSION_TERMINAL.
 	Move(id string, d engine.Direction) (*Session, error)
-	// BulkMove applies dirs in order and stops early once the game ends;
-	// blocked moves are processed and ignored. LastEvent is the last attempt
-	// made. Errors: SESSION_TERMINAL (already finished), INVALID_ARGUMENT
-	// (too many moves).
-	BulkMove(id string, dirs []engine.Direction) (*Session, error)
+	// BulkMove applies dirs in order and stops early once the game ends and,
+	// if stopOnBlocked, at the first blocked attempt (which is processed:
+	// LastEvent.Blocked is set); otherwise blocked moves are ignored and the
+	// rest still run. LastEvent is the last attempt made. Errors:
+	// SESSION_TERMINAL (already finished), INVALID_ARGUMENT (too many moves).
+	BulkMove(id string, dirs []engine.Direction, stopOnBlocked bool) (*Session, error)
 	// Reset puts the game back to the start, keeping Attempts and BestMoves.
 	Reset(id string) (*Session, error)
 	// Simulate plays dirs from a fresh start without a session.

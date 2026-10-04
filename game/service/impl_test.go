@@ -259,7 +259,7 @@ func TestInvalidDirectionRejected(t *testing.T) {
 	for _, d := range []engine.Direction{-1, 4} {
 		_, err := e.svc.Move(s.ID, d)
 		wantCode(t, err, service.CodeInvalidArgument)
-		_, err = e.svc.BulkMove(s.ID, []engine.Direction{right, d})
+		_, err = e.svc.BulkMove(s.ID, []engine.Direction{right, d}, false)
 		wantCode(t, err, service.CodeInvalidArgument)
 		_, err = e.svc.Simulate("corridor", []engine.Direction{d}, false)
 		wantCode(t, err, service.CodeInvalidArgument)
@@ -273,7 +273,7 @@ func TestMoveNotFound(t *testing.T) {
 	e := newEnv(t, envOpts{})
 	_, err := e.svc.Move("0000000000000000", right)
 	wantCode(t, err, service.CodeNotFound)
-	_, err = e.svc.BulkMove("0000000000000000", []engine.Direction{right})
+	_, err = e.svc.BulkMove("0000000000000000", []engine.Direction{right}, false)
 	wantCode(t, err, service.CodeNotFound)
 	_, err = e.svc.Reset("0000000000000000")
 	wantCode(t, err, service.CodeNotFound)
@@ -286,9 +286,9 @@ func TestTerminalSessionRejectsMovesUntilReset(t *testing.T) {
 
 	_, err := e.svc.Move(s.ID, left)
 	wantCode(t, err, service.CodeSessionTerminal)
-	_, err = e.svc.BulkMove(s.ID, []engine.Direction{left})
+	_, err = e.svc.BulkMove(s.ID, []engine.Direction{left}, false)
 	wantCode(t, err, service.CodeSessionTerminal)
-	_, err = e.svc.BulkMove(s.ID, nil)
+	_, err = e.svc.BulkMove(s.ID, nil, false)
 	wantCode(t, err, service.CodeSessionTerminal)
 	if got := e.get(t, s.ID); got.Seq != won.Seq || got.State.Moves != 4 || got.Attempts != 1 {
 		t.Fatalf("rejected moves changed the session: seq %d moves %d attempts %d", got.Seq, got.State.Moves, got.Attempts)
@@ -399,7 +399,7 @@ func TestBulkMoveEdgeCases(t *testing.T) {
 
 	// Empty batch is a no-op: no bump, no broadcast.
 	casts := len(e.rec.forSession(s.ID))
-	got, err := e.svc.BulkMove(s.ID, nil)
+	got, err := e.svc.BulkMove(s.ID, nil, false)
 	if err != nil || got.Seq != s.Seq || len(e.rec.forSession(s.ID)) != casts {
 		t.Fatalf("empty bulk: err %v seq %d", err, got.Seq)
 	}
@@ -416,10 +416,37 @@ func TestBulkMoveEdgeCases(t *testing.T) {
 	}
 
 	// Size cap.
-	_, err = e.svc.BulkMove(s.ID, repeat(up, service.MaxDirections+1))
+	_, err = e.svc.BulkMove(s.ID, repeat(up, service.MaxDirections+1), false)
 	wantCode(t, err, service.CodeInvalidArgument)
-	if _, err = e.svc.BulkMove(s.ID, repeat(up, service.MaxDirections)); err != nil {
+	if _, err = e.svc.BulkMove(s.ID, repeat(up, service.MaxDirections), false); err != nil {
 		t.Fatalf("exactly the cap must be accepted: %v", err)
+	}
+}
+
+// A wrong plan must not keep running from the wrong tile: with stopOnBlocked the
+// batch ends at the first blocked attempt (which is reported in LastEvent).
+func TestBulkMoveStopOnBlocked(t *testing.T) {
+	e := newEnv(t, envOpts{})
+	s := e.create(t, "corridor")
+
+	got, err := e.svc.BulkMove(s.ID, []engine.Direction{right, up, right, right}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.State.Pos != (engine.Position{X: 1, Y: 1}) || got.State.Moves != 1 {
+		t.Fatalf("pos %v moves %d, want (1,1) after 1 counted move", got.State.Pos, got.State.Moves)
+	}
+	if ev := got.LastEvent; !ev.Blocked || ev.Direction != up {
+		t.Fatalf("LastEvent %+v, want the blocked UP attempt", ev)
+	}
+
+	// With stopOnBlocked false the same plan skips the bump and carries on.
+	got, err = e.svc.BulkMove(s.ID, []engine.Direction{up, right}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.State.Pos != (engine.Position{X: 2, Y: 1}) || got.State.Moves != 2 {
+		t.Fatalf("pos %v moves %d, want (2,1) after 2 counted moves", got.State.Pos, got.State.Moves)
 	}
 }
 
@@ -689,7 +716,7 @@ func TestConcurrentMutations(t *testing.T) {
 				case 0, 1:
 					_, err = e.svc.Move(s.ID, engine.Direction((i+g)%4))
 				case 2:
-					_, err = e.svc.BulkMove(s.ID, []engine.Direction{down, down, right, right})
+					_, err = e.svc.BulkMove(s.ID, []engine.Direction{down, down, right, right}, false)
 				case 3:
 					_, err = e.svc.Reset(s.ID)
 				case 4:

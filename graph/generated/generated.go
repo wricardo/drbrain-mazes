@@ -117,7 +117,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		BulkMove      func(childComplexity int, sessionID string, directions []model.Direction) int
+		BulkMove      func(childComplexity int, sessionID string, directions []model.Direction, stopOnBlocked *bool) int
 		CreateMap     func(childComplexity int, mapArg model.MapInput) int
 		CreateSession func(childComplexity int, mapID string, displayName *string) int
 		DeleteMap     func(childComplexity int, id string) int
@@ -189,7 +189,7 @@ type MutationResolver interface {
 	DeleteSession(ctx context.Context, id string) (bool, error)
 	RenameSession(ctx context.Context, id string, displayName string) (*model.Session, error)
 	Move(ctx context.Context, sessionID string, direction model.Direction) (*model.Session, error)
-	BulkMove(ctx context.Context, sessionID string, directions []model.Direction) (*model.Session, error)
+	BulkMove(ctx context.Context, sessionID string, directions []model.Direction, stopOnBlocked *bool) (*model.Session, error)
 	Reset(ctx context.Context, sessionID string) (*model.Session, error)
 	CreateMap(ctx context.Context, mapArg model.MapInput) (*model.AdminMap, error)
 	UpdateMap(ctx context.Context, mapArg model.MapInput) (*model.AdminMap, error)
@@ -559,7 +559,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BulkMove(childComplexity, args["sessionID"].(string), args["directions"].([]model.Direction)), true
+		return e.complexity.Mutation.BulkMove(childComplexity, args["sessionID"].(string), args["directions"].([]model.Direction), args["stopOnBlocked"].(*bool)), true
 
 	case "Mutation.createMap":
 		if e.complexity.Mutation.CreateMap == nil {
@@ -1257,8 +1257,13 @@ type Mutation {
   renameSession(id: ID!, displayName: String!): Session!
   "One move. A blocked attempt succeeds but changes nothing (lastEvent.blocked)."
   move(sessionID: ID!, direction: Direction!): Session!
-  "Several moves in order; stops early once the game is WON or LOST."
-  bulkMove(sessionID: ID!, directions: [Direction!]!): Session!
+  """
+  Several moves in order; stops early once the game is WON or LOST. With stopOnBlocked (the
+  default) it also stops at the first blocked attempt, so a wrong plan cannot keep running
+  from the wrong tile: check lastEvent.blocked and state.pos, then send a corrected plan.
+  Pass stopOnBlocked: false to skip blocked moves and carry on.
+  """
+  bulkMove(sessionID: ID!, directions: [Direction!]!, stopOnBlocked: Boolean = true): Session!
   "Back to the start of the same map; keeps attempts and bestMoves."
   reset(sessionID: ID!): Session!
 
@@ -1294,6 +1299,11 @@ func (ec *executionContext) field_Mutation_bulkMove_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["directions"] = arg1
+	arg2, err := ec.field_Mutation_bulkMove_argsStopOnBlocked(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["stopOnBlocked"] = arg2
 	return args, nil
 }
 func (ec *executionContext) field_Mutation_bulkMove_argsSessionID(
@@ -1329,6 +1339,24 @@ func (ec *executionContext) field_Mutation_bulkMove_argsDirections(
 	}
 
 	var zeroVal []model.Direction
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_bulkMove_argsStopOnBlocked(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*bool, error) {
+	if _, ok := rawArgs["stopOnBlocked"]; !ok {
+		var zeroVal *bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("stopOnBlocked"))
+	if tmp, ok := rawArgs["stopOnBlocked"]; ok {
+		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+	}
+
+	var zeroVal *bool
 	return zeroVal, nil
 }
 
@@ -4458,7 +4486,7 @@ func (ec *executionContext) _Mutation_bulkMove(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().BulkMove(rctx, fc.Args["sessionID"].(string), fc.Args["directions"].([]model.Direction))
+		return ec.resolvers.Mutation().BulkMove(rctx, fc.Args["sessionID"].(string), fc.Args["directions"].([]model.Direction), fc.Args["stopOnBlocked"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

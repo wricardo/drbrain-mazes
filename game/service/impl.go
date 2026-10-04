@@ -307,9 +307,11 @@ func (svc *gameService) Move(id string, d engine.Direction) (*Session, error) {
 }
 
 // BulkMove plays dirs in order under one lock and one broadcast. It stops as
-// soon as the game ends; blocked attempts are processed and ignored. LastEvent
-// is the last attempt made. An empty list changes nothing.
-func (svc *gameService) BulkMove(id string, dirs []engine.Direction) (*Session, error) {
+// soon as the game ends and, when stopOnBlocked is set, at the first blocked
+// attempt (a wrong plan then cannot run on from the wrong tile); otherwise
+// blocked attempts are processed and ignored. LastEvent is the last attempt
+// made. An empty list changes nothing.
+func (svc *gameService) BulkMove(id string, dirs []engine.Direction, stopOnBlocked bool) (*Session, error) {
 	if len(dirs) > MaxDirections {
 		return nil, Errorf(CodeInvalidArgument, "too many directions (%d, max %d)", len(dirs), MaxDirections)
 	}
@@ -341,7 +343,7 @@ func (svc *gameService) BulkMove(id string, dirs []engine.Direction) (*Session, 
 			return nil, err
 		}
 		moved = moved || !ev.Blocked
-		if ended {
+		if ended || (ev.Blocked && stopOnBlocked) {
 			break
 		}
 	}

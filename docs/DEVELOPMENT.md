@@ -140,7 +140,7 @@ Engine rules for code: `State.Move` mutates in place; `Clone()` anything that le
 
 ### Sessions
 
-A session is one play of one map. `move` and `bulkMove` apply directions (`bulkMove` stops when the game ends); `reset` returns to the start and keeps `attempts` (finished games) and `bestMoves` (fewest moves in a won game). Every update has a `seq`; clients drop updates with `seq <=` the last seen.
+A session is one play of one map. `move` and `bulkMove` apply directions. `bulkMove` stops when the game ends and, by default (`stopOnBlocked: true`), at the first blocked attempt, so a misjudged plan cannot keep running from the wrong tile; `stopOnBlocked: false` skips blocked moves and carries on. `reset` returns to the start and keeps `attempts` (finished games) and `bestMoves` (fewest moves in a won game). Every update has a `seq`; clients drop updates with `seq <=` the last seen.
 
 ## Fog
 

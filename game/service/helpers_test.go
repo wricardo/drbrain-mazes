@@ -317,7 +317,7 @@ func (e *env) move(t testing.TB, id string, d engine.Direction) *service.Session
 
 func (e *env) bulk(t testing.TB, id string, dirs ...engine.Direction) *service.Session {
 	t.Helper()
-	s, err := e.svc.BulkMove(id, dirs)
+	s, err := e.svc.BulkMove(id, dirs, false)
 	if err != nil {
 		t.Fatalf("BulkMove: %v", err)
 	}

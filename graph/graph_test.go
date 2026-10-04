@@ -26,6 +26,7 @@ type fakeService struct {
 	sessions map[string]*service.Session
 	saved    []engine.MapConfig
 	dirs     []engine.Direction
+	stop     bool
 	err      error
 }
 
@@ -76,8 +77,8 @@ func (f *fakeService) Move(id string, d engine.Direction) (*service.Session, err
 	return f.GetSession(id)
 }
 
-func (f *fakeService) BulkMove(id string, dirs []engine.Direction) (*service.Session, error) {
-	f.dirs = dirs
+func (f *fakeService) BulkMove(id string, dirs []engine.Direction, stopOnBlocked bool) (*service.Session, error) {
+	f.dirs, f.stop = dirs, stopOnBlocked
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -351,15 +352,20 @@ func TestMoveResolversConvertAndPropagate(t *testing.T) {
 	if err != nil || got.ID != "s1" || !reflect.DeepEqual(fs.dirs, []engine.Direction{engine.DirLeft}) {
 		t.Fatalf("Move: %+v %v dirs %v", got, err, fs.dirs)
 	}
-	if _, err := m.BulkMove(ctx, "s", []model.Direction{model.DirectionUp, model.DirectionDown}); err != nil || !reflect.DeepEqual(fs.dirs, []engine.Direction{engine.DirUp, engine.DirDown}) {
-		t.Fatalf("BulkMove: %v dirs %v", err, fs.dirs)
+	// stopOnBlocked defaults to true when omitted, and an explicit false is passed through.
+	if _, err := m.BulkMove(ctx, "s", []model.Direction{model.DirectionUp, model.DirectionDown}, nil); err != nil || !reflect.DeepEqual(fs.dirs, []engine.Direction{engine.DirUp, engine.DirDown}) || !fs.stop {
+		t.Fatalf("BulkMove: %v dirs %v stop %v", err, fs.dirs, fs.stop)
+	}
+	no := false
+	if _, err := m.BulkMove(ctx, "s", []model.Direction{model.DirectionUp}, &no); err != nil || fs.stop {
+		t.Fatalf("BulkMove(stopOnBlocked:false): %v stop %v", err, fs.stop)
 	}
 
 	fs.err = service.Errorf(service.CodeSessionTerminal, "game is already WON")
 	if _, err := m.Move(ctx, "s", model.DirectionUp); codeOf(t, err) != service.CodeSessionTerminal {
 		t.Fatalf("Move err = %v", err)
 	}
-	if _, err := m.BulkMove(ctx, "s", nil); codeOf(t, err) != service.CodeSessionTerminal {
+	if _, err := m.BulkMove(ctx, "s", nil, nil); codeOf(t, err) != service.CodeSessionTerminal {
 		t.Fatalf("BulkMove err = %v", err)
 	}
 }

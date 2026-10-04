@@ -73,6 +73,14 @@ R=$(gql "mutation { reset(sessionID:\"${SID}\") { state { moves status } bestMov
 echo "reset: ${R}"
 echo "${R}" | jq -e ".data.reset.state.status == \"READY\" and .data.reset.state.moves == 0 and .data.reset.bestMoves == ${N} and .data.reset.attempts == 1" >/dev/null || fail "reset"
 
+# bulkMove stops at the first blocked move by default; stopOnBlocked:false carries on.
+R=$(gql "mutation { bulkMove(sessionID:\"${SID}\", directions:[UP, ${FIRST}]) { state { moves } lastEvent { blocked } } }")
+echo "bulkMove (stop on blocked): ${R}"
+echo "${R}" | jq -e '.data.bulkMove.state.moves == 0 and .data.bulkMove.lastEvent.blocked == true' >/dev/null || fail "bulkMove must stop at a blocked move"
+R=$(gql "mutation { bulkMove(sessionID:\"${SID}\", directions:[UP, ${FIRST}], stopOnBlocked:false) { state { moves } lastEvent { blocked } } }")
+echo "bulkMove (skip blocked): ${R}"
+echo "${R}" | jq -e '.data.bulkMove.state.moves == 1 and .data.bulkMove.lastEvent.blocked == false' >/dev/null || fail "bulkMove stopOnBlocked:false must skip blocked moves"
+
 curl -sf "${URL}/llms.txt" | grep -q "Dr Brain" || fail "/llms.txt"
 echo "llms.txt ok"
 echo "SMOKE OK"

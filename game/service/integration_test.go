@@ -108,7 +108,7 @@ func TestRestartKeepsOutcomeAndCounters(t *testing.T) {
 
 	svc1, _ := boot(t, dir, maps, nil)
 	s, _ := svc1.CreateSession("corridor", "")
-	want, err := svc1.BulkMove(s.ID, repeat(right, 4))
+	want, err := svc1.BulkMove(s.ID, repeat(right, 4), false)
 	if err != nil {
 		t.Fatal(err)
 	}

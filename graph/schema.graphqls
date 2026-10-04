@@ -202,8 +202,13 @@ type Mutation {
   renameSession(id: ID!, displayName: String!): Session!
   "One move. A blocked attempt succeeds but changes nothing (lastEvent.blocked)."
   move(sessionID: ID!, direction: Direction!): Session!
-  "Several moves in order; stops early once the game is WON or LOST."
-  bulkMove(sessionID: ID!, directions: [Direction!]!): Session!
+  """
+  Several moves in order; stops early once the game is WON or LOST. With stopOnBlocked (the
+  default) it also stops at the first blocked attempt, so a wrong plan cannot keep running
+  from the wrong tile: check lastEvent.blocked and state.pos, then send a corrected plan.
+  Pass stopOnBlocked: false to skip blocked moves and carry on.
+  """
+  bulkMove(sessionID: ID!, directions: [Direction!]!, stopOnBlocked: Boolean = true): Session!
   "Back to the start of the same map; keeps attempts and bestMoves."
   reset(sessionID: ID!): Session!
 

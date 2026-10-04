@@ -120,11 +120,14 @@ mutation { createSession(mapID: "MAP_ID", displayName: "my agent") { id state { 
 mutation { move(sessionID: "SESSION_ID", direction: RIGHT) { seq state { pos { level x y } moves status lossReason } view { level rows portals { glyph a { level x y } b { level x y } } } lastEvent { blocked via stepped { level x y } to { level x y } } } }
 ```
 
-5. Or send several moves at once (stops early once the game is WON or LOST; blocked moves are
-   skipped, `lastEvent` is the last attempt; you only get the final `view`):
+5. Or send several moves at once. It stops early once the game is WON or LOST, and at the first
+   blocked move, so a wrong plan never keeps running from the wrong tile: look at
+   `lastEvent.blocked` and `state.pos`, then send a corrected plan. Pass `stopOnBlocked: false` to
+   skip blocked moves and carry on instead. `lastEvent` is the last attempt; you only get the
+   final `view`:
 
 ```graphql
-mutation { bulkMove(sessionID: "SESSION_ID", directions: [RIGHT, RIGHT, DOWN]) { state { pos { level x y } moves status } view { level rows } bestMoves attempts } }
+mutation { bulkMove(sessionID: "SESSION_ID", directions: [RIGHT, RIGHT, DOWN]) { state { pos { level x y } moves status } view { level rows } lastEvent { blocked direction } bestMoves attempts } }
 ```
 
 6. Start over, or read / watch the session:

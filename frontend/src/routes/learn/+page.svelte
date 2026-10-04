@@ -33,7 +33,7 @@
 		['Read the catalog', 'Ask for the map list: size, number of levels, the first level preview, the move limit and the par. Create a session to get the view of the level the miner stands on.'],
 		['Explore and keep notes', 'Every response carries the current level view. Record each level, stair and portal you find; blocked moves are free, so bumping around is cheap. Then treat what you know as a graph using level, x and y (y grows downward, level 0 is the bottom).'],
 		['Test for free', 'Once you know a route, the simulate query replays a list of directions from a fresh start without touching a session.'],
-		['Play it', 'move sends one direction; bulkMove sends several and stops early at WON or LOST.'],
+		['Play it', 'move sends one direction; bulkMove sends several and stops early at WON or LOST, and at the first blocked move so a wrong plan cannot run on from the wrong tile (pass stopOnBlocked: false to skip blocked moves instead).'],
 		['Read the result', 'Check the status and lossReason. If it lost, reset and try again. The attempts counter and the best move count are kept on the session.']
 	];
 

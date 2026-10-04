@@ -80,7 +80,8 @@ Limits: at most ${m.maxMoves} counted moves. Par (shortest route) = ${par}.
 1. Explore: move, read \`view\` after each move (or after a short bulkMove), and build a map of every level in your notes. Probing walls is free, so bump around to learn a level.
 2. Move one step at a time or in short bursts:
 mutation { move(sessionID: "${s.id}", direction: UP) { view { level rows portals { glyph a { x y } b { x y } } } state { status moves pos { level x y } } lastEvent { blocked via } } }
-mutation { bulkMove(sessionID: "${s.id}", directions: [UP, RIGHT, RIGHT]) { view { level rows } state { status moves pos { level x y } } } }
+mutation { bulkMove(sessionID: "${s.id}", directions: [UP, RIGHT, RIGHT]) { view { level rows } state { status moves pos { level x y } } lastEvent { blocked direction } } }
+bulkMove stops at the first blocked move (or when the game ends), so a misread tile cannot send the rest of the batch from the wrong spot: check lastEvent.blocked and state.pos, then send a corrected plan. Add stopOnBlocked: false to skip blocked moves and carry on.
 3. Read the session any time:
 query { session(id: "${s.id}") { attempts bestMoves view { level levelCount rows } state { status lossReason moves pos { level x y } } } }
 4. Once you know a route, test it for free: simulate replays directions from a fresh start without touching the session:
