@@ -24,12 +24,18 @@ type Result struct {
 	// ParMoves is the shortest winning route length, or -1 when the finish is
 	// not reachable (same convention as engine.Map.Par).
 	ParMoves int `json:"parMoves"`
+	// MinLevelChanges is the fewest stairs any winning route takes; -1 when
+	// the finish is not reachable.
+	MinLevelChanges int `json:"minLevelChanges"`
+	// ForcedDescents is the fewest down stairs any winning route takes; -1
+	// when the finish is not reachable.
+	ForcedDescents int `json:"forcedDescents"`
 }
 
 // Check validates cfg structurally (engine.NewMap) and verifies the finish
 // can be reached from the start.
 func Check(cfg engine.MapConfig) Result {
-	res := Result{Issues: []string{}, ParMoves: -1}
+	res := Result{Issues: []string{}, ParMoves: -1, MinLevelChanges: -1, ForcedDescents: -1}
 	m, err := engine.NewMap(cfg)
 	if err != nil {
 		var ve *engine.ValidationError
@@ -41,6 +47,8 @@ func Check(cfg engine.MapConfig) Result {
 		return res
 	}
 	res.ParMoves = m.Par
+	res.MinLevelChanges = m.MinLevelChanges()
+	res.ForcedDescents = m.ForcedDescents
 	res.FinishReachable = m.Par >= 0
 	if !res.FinishReachable {
 		res.Issues = append(res.Issues, fmt.Sprintf("finish at level %d (%d,%d) is unreachable from the start", m.Finish.Level, m.Finish.X, m.Finish.Y))

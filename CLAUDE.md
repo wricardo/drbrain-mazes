@@ -52,7 +52,7 @@ maps/ solutions/ map-schema.json   data; solutions are never exposed by the API
 - **Locking**: live `*service.Session` is guarded by `Lock/Unlock`. Never broadcast or do I/O while holding it. Hub/resolvers only see `Clone()` snapshots. Don't hold the lock when calling `SessionStore.Persist`.
 - **Delivery**: every broadcast carries a full snapshot + monotonically increasing `Seq`; hub drops the *oldest* queued update on a full buffer so terminal states are never lost. Subscription resolver emits the current snapshot first. A blocked move still bumps `Seq` and broadcasts (so UIs can flash a bump) but is not persisted.
 - **Map snapshot**: sessions embed their own copy of the map; map edits/deletes must never touch existing sessions.
-- **Security**: map ids match `^[a-z0-9_-]{1,64}$` (they are filenames); session ids are validated before touching disk; admin mutations and `adminMap` need `X-Admin-Key` == `ADMIN_API_KEY` (constant-time) unless `ALLOW_UNAUTHENTICATED_ADMIN=true`; `max_moves ≤ 10000`; `simulate`/`bulkMove` direction lists are capped (`service.MaxDirections`). Never add solutions to the GraphQL schema.
+- **Security**: map ids match `^[a-z0-9_-]{1,64}$` (they are filenames); session ids are validated before touching disk; admin mutations and `adminMap` need `X-Admin-Key` == `ADMIN_API_KEY` (constant-time) unless `ALLOW_UNAUTHENTICATED_ADMIN=true`; `max_moves ≤ 10000`; `bulkMove` direction lists are capped (`service.MaxDirections`). Never add solutions or a dry-run/`simulate` query to the GraphQL schema: players learn maps only through real moves and `reset`.
 
 ## Workflows
 

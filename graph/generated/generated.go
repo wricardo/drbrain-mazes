@@ -50,19 +50,21 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AdminMap struct {
-		Description func(childComplexity int) int
-		Difficulty  func(childComplexity int) int
-		Finish      func(childComplexity int) int
-		Height      func(childComplexity int) int
-		ID          func(childComplexity int) int
-		LevelCount  func(childComplexity int) int
-		Levels      func(childComplexity int) int
-		MaxMoves    func(childComplexity int) int
-		Name        func(childComplexity int) int
-		ParMoves    func(childComplexity int) int
-		Portals     func(childComplexity int) int
-		Start       func(childComplexity int) int
-		Width       func(childComplexity int) int
+		Description     func(childComplexity int) int
+		Difficulty      func(childComplexity int) int
+		Finish          func(childComplexity int) int
+		ForcedDescents  func(childComplexity int) int
+		Height          func(childComplexity int) int
+		ID              func(childComplexity int) int
+		LevelCount      func(childComplexity int) int
+		Levels          func(childComplexity int) int
+		MaxMoves        func(childComplexity int) int
+		MinLevelChanges func(childComplexity int) int
+		Name            func(childComplexity int) int
+		ParMoves        func(childComplexity int) int
+		Portals         func(childComplexity int) int
+		Start           func(childComplexity int) int
+		Width           func(childComplexity int) int
 	}
 
 	GameState struct {
@@ -81,16 +83,18 @@ type ComplexityRoot struct {
 	}
 
 	Map struct {
-		Description func(childComplexity int) int
-		Difficulty  func(childComplexity int) int
-		Height      func(childComplexity int) int
-		ID          func(childComplexity int) int
-		LevelCount  func(childComplexity int) int
-		MaxMoves    func(childComplexity int) int
-		Name        func(childComplexity int) int
-		ParMoves    func(childComplexity int) int
-		Preview     func(childComplexity int) int
-		Width       func(childComplexity int) int
+		Description     func(childComplexity int) int
+		Difficulty      func(childComplexity int) int
+		ForcedDescents  func(childComplexity int) int
+		Height          func(childComplexity int) int
+		ID              func(childComplexity int) int
+		LevelCount      func(childComplexity int) int
+		MaxMoves        func(childComplexity int) int
+		MinLevelChanges func(childComplexity int) int
+		Name            func(childComplexity int) int
+		ParMoves        func(childComplexity int) int
+		Preview         func(childComplexity int) int
+		Width           func(childComplexity int) int
 	}
 
 	MapValidationIssue struct {
@@ -99,7 +103,9 @@ type ComplexityRoot struct {
 
 	MapValidationResult struct {
 		FinishReachable func(childComplexity int) int
+		ForcedDescents  func(childComplexity int) int
 		Issues          func(childComplexity int) int
+		MinLevelChanges func(childComplexity int) int
 		ParMoves        func(childComplexity int) int
 		Valid           func(childComplexity int) int
 	}
@@ -147,7 +153,6 @@ type ComplexityRoot struct {
 		Maps     func(childComplexity int) int
 		Session  func(childComplexity int, id string) int
 		Sessions func(childComplexity int, sort *model.SessionSort, limit *int, mapID *string) int
-		Simulate func(childComplexity int, mapID string, moves []model.Direction, includeEvents *bool) int
 	}
 
 	Session struct {
@@ -169,14 +174,6 @@ type ComplexityRoot struct {
 		Event   func(childComplexity int) int
 		Seq     func(childComplexity int) int
 		Session func(childComplexity int) int
-	}
-
-	SimulationResult struct {
-		Events     func(childComplexity int) int
-		FinalState func(childComplexity int) int
-		LossReason func(childComplexity int) int
-		Moves      func(childComplexity int) int
-		Status     func(childComplexity int) int
 	}
 
 	Subscription struct {
@@ -202,7 +199,6 @@ type QueryResolver interface {
 	AdminMap(ctx context.Context, id string) (*model.AdminMap, error)
 	Session(ctx context.Context, id string) (*model.Session, error)
 	Sessions(ctx context.Context, sort *model.SessionSort, limit *int, mapID *string) ([]*model.Session, error)
-	Simulate(ctx context.Context, mapID string, moves []model.Direction, includeEvents *bool) (*model.SimulationResult, error)
 }
 type SubscriptionResolver interface {
 	SessionUpdated(ctx context.Context, sessionID string) (<-chan *model.SessionUpdate, error)
@@ -248,6 +244,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMap.Finish(childComplexity), true
 
+	case "AdminMap.forcedDescents":
+		if e.complexity.AdminMap.ForcedDescents == nil {
+			break
+		}
+
+		return e.complexity.AdminMap.ForcedDescents(childComplexity), true
+
 	case "AdminMap.height":
 		if e.complexity.AdminMap.Height == nil {
 			break
@@ -282,6 +285,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMap.MaxMoves(childComplexity), true
+
+	case "AdminMap.minLevelChanges":
+		if e.complexity.AdminMap.MinLevelChanges == nil {
+			break
+		}
+
+		return e.complexity.AdminMap.MinLevelChanges(childComplexity), true
 
 	case "AdminMap.name":
 		if e.complexity.AdminMap.Name == nil {
@@ -395,6 +405,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Map.Difficulty(childComplexity), true
 
+	case "Map.forcedDescents":
+		if e.complexity.Map.ForcedDescents == nil {
+			break
+		}
+
+		return e.complexity.Map.ForcedDescents(childComplexity), true
+
 	case "Map.height":
 		if e.complexity.Map.Height == nil {
 			break
@@ -422,6 +439,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Map.MaxMoves(childComplexity), true
+
+	case "Map.minLevelChanges":
+		if e.complexity.Map.MinLevelChanges == nil {
+			break
+		}
+
+		return e.complexity.Map.MinLevelChanges(childComplexity), true
 
 	case "Map.name":
 		if e.complexity.Map.Name == nil {
@@ -465,12 +489,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MapValidationResult.FinishReachable(childComplexity), true
 
+	case "MapValidationResult.forcedDescents":
+		if e.complexity.MapValidationResult.ForcedDescents == nil {
+			break
+		}
+
+		return e.complexity.MapValidationResult.ForcedDescents(childComplexity), true
+
 	case "MapValidationResult.issues":
 		if e.complexity.MapValidationResult.Issues == nil {
 			break
 		}
 
 		return e.complexity.MapValidationResult.Issues(childComplexity), true
+
+	case "MapValidationResult.minLevelChanges":
+		if e.complexity.MapValidationResult.MinLevelChanges == nil {
+			break
+		}
+
+		return e.complexity.MapValidationResult.MinLevelChanges(childComplexity), true
 
 	case "MapValidationResult.parMoves":
 		if e.complexity.MapValidationResult.ParMoves == nil {
@@ -766,18 +804,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Sessions(childComplexity, args["sort"].(*model.SessionSort), args["limit"].(*int), args["mapId"].(*string)), true
 
-	case "Query.simulate":
-		if e.complexity.Query.Simulate == nil {
-			break
-		}
-
-		args, err := ec.field_Query_simulate_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Simulate(childComplexity, args["mapID"].(string), args["moves"].([]model.Direction), args["includeEvents"].(*bool)), true
-
 	case "Session.attempts":
 		if e.complexity.Session.Attempts == nil {
 			break
@@ -882,41 +908,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SessionUpdate.Session(childComplexity), true
-
-	case "SimulationResult.events":
-		if e.complexity.SimulationResult.Events == nil {
-			break
-		}
-
-		return e.complexity.SimulationResult.Events(childComplexity), true
-
-	case "SimulationResult.finalState":
-		if e.complexity.SimulationResult.FinalState == nil {
-			break
-		}
-
-		return e.complexity.SimulationResult.FinalState(childComplexity), true
-
-	case "SimulationResult.lossReason":
-		if e.complexity.SimulationResult.LossReason == nil {
-			break
-		}
-
-		return e.complexity.SimulationResult.LossReason(childComplexity), true
-
-	case "SimulationResult.moves":
-		if e.complexity.SimulationResult.Moves == nil {
-			break
-		}
-
-		return e.complexity.SimulationResult.Moves(childComplexity), true
-
-	case "SimulationResult.status":
-		if e.complexity.SimulationResult.Status == nil {
-			break
-		}
-
-		return e.complexity.SimulationResult.Status(childComplexity), true
 
 	case "Subscription.sessionUpdated":
 		if e.complexity.Subscription.SessionUpdated == nil {
@@ -1123,6 +1114,16 @@ type Map {
   maxMoves: Int!
   "Length of the shortest winning route; null if the finish is unreachable."
   parMoves: Int
+  """
+  Fewest stairs any winning route takes (levelCount - 1 + 2 * forcedDescents);
+  null if the finish is unreachable.
+  """
+  minLevelChanges: Int
+  """
+  Fewest down stairs any winning route takes: 0 means you can climb straight up.
+  Null if the finish is unreachable.
+  """
+  forcedDescents: Int
 }
 
 "Full map for the editor (admin only)."
@@ -1144,6 +1145,8 @@ type AdminMap {
   portals: [Portal!]!
   maxMoves: Int!
   parMoves: Int
+  minLevelChanges: Int
+  forcedDescents: Int
 }
 
 """
@@ -1210,14 +1213,6 @@ type SessionUpdate {
   event: MoveEvent
 }
 
-type SimulationResult {
-  status: Status!
-  lossReason: LossReason
-  moves: Int!
-  finalState: GameState!
-  events: [MoveEvent!]
-}
-
 type MapValidationIssue {
   message: String!
 }
@@ -1228,6 +1223,8 @@ type MapValidationResult {
   "Set when the map parses but the finish cannot be reached from the start."
   finishReachable: Boolean!
   parMoves: Int
+  minLevelChanges: Int
+  forcedDescents: Int
 }
 
 input MapInput {
@@ -1247,8 +1244,6 @@ type Query {
   adminMap(id: ID!): AdminMap
   session(id: ID!): Session
   sessions(sort: SessionSort = RECENT, limit: Int = 50, mapId: ID): [Session!]!
-  "Plays directions from a fresh start without a session. Directions after WON/LOST are ignored."
-  simulate(mapID: ID!, moves: [Direction!]!, includeEvents: Boolean = false): SimulationResult!
 }
 
 type Mutation {
@@ -1864,80 +1859,6 @@ func (ec *executionContext) field_Query_sessions_argsMapID(
 	}
 
 	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_simulate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Query_simulate_argsMapID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["mapID"] = arg0
-	arg1, err := ec.field_Query_simulate_argsMoves(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["moves"] = arg1
-	arg2, err := ec.field_Query_simulate_argsIncludeEvents(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["includeEvents"] = arg2
-	return args, nil
-}
-func (ec *executionContext) field_Query_simulate_argsMapID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["mapID"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("mapID"))
-	if tmp, ok := rawArgs["mapID"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_simulate_argsMoves(
-	ctx context.Context,
-	rawArgs map[string]any,
-) ([]model.Direction, error) {
-	if _, ok := rawArgs["moves"]; !ok {
-		var zeroVal []model.Direction
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("moves"))
-	if tmp, ok := rawArgs["moves"]; ok {
-		return ec.unmarshalNDirection2ᚕgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐDirectionᚄ(ctx, tmp)
-	}
-
-	var zeroVal []model.Direction
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_simulate_argsIncludeEvents(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*bool, error) {
-	if _, ok := rawArgs["includeEvents"]; !ok {
-		var zeroVal *bool
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("includeEvents"))
-	if tmp, ok := rawArgs["includeEvents"]; ok {
-		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
-	}
-
-	var zeroVal *bool
 	return zeroVal, nil
 }
 
@@ -2670,6 +2591,88 @@ func (ec *executionContext) _AdminMap_parMoves(ctx context.Context, field graphq
 }
 
 func (ec *executionContext) fieldContext_AdminMap_parMoves(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMap_minLevelChanges(ctx context.Context, field graphql.CollectedField, obj *model.AdminMap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMap_minLevelChanges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinLevelChanges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMap_minLevelChanges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMap",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMap_forcedDescents(ctx context.Context, field graphql.CollectedField, obj *model.AdminMap) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMap_forcedDescents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ForcedDescents, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMap_forcedDescents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMap",
 		Field:      field,
@@ -3536,6 +3539,88 @@ func (ec *executionContext) fieldContext_Map_parMoves(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Map_minLevelChanges(ctx context.Context, field graphql.CollectedField, obj *model.Map) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Map_minLevelChanges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinLevelChanges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Map_minLevelChanges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Map",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Map_forcedDescents(ctx context.Context, field graphql.CollectedField, obj *model.Map) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Map_forcedDescents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ForcedDescents, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Map_forcedDescents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Map",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MapValidationIssue_message(ctx context.Context, field graphql.CollectedField, obj *model.MapValidationIssue) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MapValidationIssue_message(ctx, field)
 	if err != nil {
@@ -3745,6 +3830,88 @@ func (ec *executionContext) _MapValidationResult_parMoves(ctx context.Context, f
 }
 
 func (ec *executionContext) fieldContext_MapValidationResult_parMoves(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapValidationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapValidationResult_minLevelChanges(ctx context.Context, field graphql.CollectedField, obj *model.MapValidationResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MapValidationResult_minLevelChanges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinLevelChanges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MapValidationResult_minLevelChanges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapValidationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapValidationResult_forcedDescents(ctx context.Context, field graphql.CollectedField, obj *model.MapValidationResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MapValidationResult_forcedDescents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ForcedDescents, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MapValidationResult_forcedDescents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MapValidationResult",
 		Field:      field,
@@ -4699,6 +4866,10 @@ func (ec *executionContext) fieldContext_Mutation_createMap(ctx context.Context,
 				return ec.fieldContext_AdminMap_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_AdminMap_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_AdminMap_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_AdminMap_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMap", field.Name)
 		},
@@ -4782,6 +4953,10 @@ func (ec *executionContext) fieldContext_Mutation_updateMap(ctx context.Context,
 				return ec.fieldContext_AdminMap_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_AdminMap_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_AdminMap_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_AdminMap_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMap", field.Name)
 		},
@@ -4902,6 +5077,10 @@ func (ec *executionContext) fieldContext_Mutation_validateMap(ctx context.Contex
 				return ec.fieldContext_MapValidationResult_finishReachable(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_MapValidationResult_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_MapValidationResult_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_MapValidationResult_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MapValidationResult", field.Name)
 		},
@@ -5256,6 +5435,10 @@ func (ec *executionContext) fieldContext_Query_maps(_ context.Context, field gra
 				return ec.fieldContext_Map_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_Map_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_Map_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_Map_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Map", field.Name)
 		},
@@ -5319,6 +5502,10 @@ func (ec *executionContext) fieldContext_Query_map(ctx context.Context, field gr
 				return ec.fieldContext_Map_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_Map_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_Map_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_Map_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Map", field.Name)
 		},
@@ -5399,6 +5586,10 @@ func (ec *executionContext) fieldContext_Query_adminMap(ctx context.Context, fie
 				return ec.fieldContext_AdminMap_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_AdminMap_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_AdminMap_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_AdminMap_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMap", field.Name)
 		},
@@ -5570,73 +5761,6 @@ func (ec *executionContext) fieldContext_Query_sessions(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_sessions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_simulate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_simulate(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Simulate(rctx, fc.Args["mapID"].(string), fc.Args["moves"].([]model.Direction), fc.Args["includeEvents"].(*bool))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.SimulationResult)
-	fc.Result = res
-	return ec.marshalNSimulationResult2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐSimulationResult(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_simulate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "status":
-				return ec.fieldContext_SimulationResult_status(ctx, field)
-			case "lossReason":
-				return ec.fieldContext_SimulationResult_lossReason(ctx, field)
-			case "moves":
-				return ec.fieldContext_SimulationResult_moves(ctx, field)
-			case "finalState":
-				return ec.fieldContext_SimulationResult_finalState(ctx, field)
-			case "events":
-				return ec.fieldContext_SimulationResult_events(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SimulationResult", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_simulate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5965,6 +6089,10 @@ func (ec *executionContext) fieldContext_Session_map(_ context.Context, field gr
 				return ec.fieldContext_Map_maxMoves(ctx, field)
 			case "parMoves":
 				return ec.fieldContext_Map_parMoves(ctx, field)
+			case "minLevelChanges":
+				return ec.fieldContext_Map_minLevelChanges(ctx, field)
+			case "forcedDescents":
+				return ec.fieldContext_Map_forcedDescents(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Map", field.Name)
 		},
@@ -6505,252 +6633,6 @@ func (ec *executionContext) _SessionUpdate_event(ctx context.Context, field grap
 func (ec *executionContext) fieldContext_SessionUpdate_event(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SessionUpdate",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "move":
-				return ec.fieldContext_MoveEvent_move(ctx, field)
-			case "direction":
-				return ec.fieldContext_MoveEvent_direction(ctx, field)
-			case "from":
-				return ec.fieldContext_MoveEvent_from(ctx, field)
-			case "stepped":
-				return ec.fieldContext_MoveEvent_stepped(ctx, field)
-			case "to":
-				return ec.fieldContext_MoveEvent_to(ctx, field)
-			case "blocked":
-				return ec.fieldContext_MoveEvent_blocked(ctx, field)
-			case "via":
-				return ec.fieldContext_MoveEvent_via(ctx, field)
-			case "status":
-				return ec.fieldContext_MoveEvent_status(ctx, field)
-			case "lossReason":
-				return ec.fieldContext_MoveEvent_lossReason(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type MoveEvent", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimulationResult_status(ctx context.Context, field graphql.CollectedField, obj *model.SimulationResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SimulationResult_status(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.Status)
-	fc.Result = res
-	return ec.marshalNStatus2githubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐStatus(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SimulationResult_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimulationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Status does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimulationResult_lossReason(ctx context.Context, field graphql.CollectedField, obj *model.SimulationResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SimulationResult_lossReason(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.LossReason, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.LossReason)
-	fc.Result = res
-	return ec.marshalOLossReason2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐLossReason(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SimulationResult_lossReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimulationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type LossReason does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimulationResult_moves(ctx context.Context, field graphql.CollectedField, obj *model.SimulationResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SimulationResult_moves(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Moves, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SimulationResult_moves(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimulationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimulationResult_finalState(ctx context.Context, field graphql.CollectedField, obj *model.SimulationResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SimulationResult_finalState(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FinalState, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.GameState)
-	fc.Result = res
-	return ec.marshalNGameState2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐGameState(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SimulationResult_finalState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimulationResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "pos":
-				return ec.fieldContext_GameState_pos(ctx, field)
-			case "moves":
-				return ec.fieldContext_GameState_moves(ctx, field)
-			case "status":
-				return ec.fieldContext_GameState_status(ctx, field)
-			case "lossReason":
-				return ec.fieldContext_GameState_lossReason(ctx, field)
-			case "path":
-				return ec.fieldContext_GameState_path(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type GameState", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SimulationResult_events(ctx context.Context, field graphql.CollectedField, obj *model.SimulationResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SimulationResult_events(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Events, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*model.MoveEvent)
-	fc.Result = res
-	return ec.marshalOMoveEvent2ᚕᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐMoveEventᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SimulationResult_events(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SimulationResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -8952,6 +8834,10 @@ func (ec *executionContext) _AdminMap(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "parMoves":
 			out.Values[i] = ec._AdminMap_parMoves(ctx, field, obj)
+		case "minLevelChanges":
+			out.Values[i] = ec._AdminMap_minLevelChanges(ctx, field, obj)
+		case "forcedDescents":
+			out.Values[i] = ec._AdminMap_forcedDescents(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9143,6 +9029,10 @@ func (ec *executionContext) _Map(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 		case "parMoves":
 			out.Values[i] = ec._Map_parMoves(ctx, field, obj)
+		case "minLevelChanges":
+			out.Values[i] = ec._Map_minLevelChanges(ctx, field, obj)
+		case "forcedDescents":
+			out.Values[i] = ec._Map_forcedDescents(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9233,6 +9123,10 @@ func (ec *executionContext) _MapValidationResult(ctx context.Context, sel ast.Se
 			}
 		case "parMoves":
 			out.Values[i] = ec._MapValidationResult_parMoves(ctx, field, obj)
+		case "minLevelChanges":
+			out.Values[i] = ec._MapValidationResult_minLevelChanges(ctx, field, obj)
+		case "forcedDescents":
+			out.Values[i] = ec._MapValidationResult_forcedDescents(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9659,28 +9553,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "simulate":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_simulate(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -9823,59 +9695,6 @@ func (ec *executionContext) _SessionUpdate(ctx context.Context, sel ast.Selectio
 			}
 		case "event":
 			out.Values[i] = ec._SessionUpdate_event(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var simulationResultImplementors = []string{"SimulationResult"}
-
-func (ec *executionContext) _SimulationResult(ctx context.Context, sel ast.SelectionSet, obj *model.SimulationResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, simulationResultImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("SimulationResult")
-		case "status":
-			out.Values[i] = ec._SimulationResult_status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "lossReason":
-			out.Values[i] = ec._SimulationResult_lossReason(ctx, field, obj)
-		case "moves":
-			out.Values[i] = ec._SimulationResult_moves(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "finalState":
-			out.Values[i] = ec._SimulationResult_finalState(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "events":
-			out.Values[i] = ec._SimulationResult_events(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10532,16 +10351,6 @@ func (ec *executionContext) marshalNMapValidationResult2ᚖgithubᚗcomᚋwricar
 	return ec._MapValidationResult(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMoveEvent2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐMoveEvent(ctx context.Context, sel ast.SelectionSet, v *model.MoveEvent) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._MoveEvent(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNPortal2ᚕᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐPortalᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Portal) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -10720,20 +10529,6 @@ func (ec *executionContext) marshalNSessionUpdate2ᚖgithubᚗcomᚋwricardoᚋd
 		return graphql.Null
 	}
 	return ec._SessionUpdate(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNSimulationResult2githubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐSimulationResult(ctx context.Context, sel ast.SelectionSet, v model.SimulationResult) graphql.Marshaler {
-	return ec._SimulationResult(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNSimulationResult2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐSimulationResult(ctx context.Context, sel ast.SelectionSet, v *model.SimulationResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._SimulationResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNStatus2githubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐStatus(ctx context.Context, v any) (model.Status, error) {
@@ -11195,53 +10990,6 @@ func (ec *executionContext) marshalOMap2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑm
 		return graphql.Null
 	}
 	return ec._Map(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOMoveEvent2ᚕᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐMoveEventᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MoveEvent) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNMoveEvent2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐMoveEvent(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) marshalOMoveEvent2ᚖgithubᚗcomᚋwricardoᚋdrbrainᚑmazesᚋgraphᚋmodelᚐMoveEvent(ctx context.Context, sel ast.SelectionSet, v *model.MoveEvent) graphql.Marshaler {

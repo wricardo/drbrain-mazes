@@ -153,6 +153,10 @@ type Map struct {
 	// Par is the length of the shortest winning move sequence, or -1 if the
 	// finish cannot be reached from the start.
 	Par int
+	// ForcedDescents is the fewest D stairs any winning route must take, or -1
+	// if the finish is unreachable. Each descent costs a climb back, so the
+	// fewest level changes is LevelCount()-1 + 2*ForcedDescents.
+	ForcedDescents int
 
 	tiles   []Tile                // level*Width*Height + y*Width + x
 	partner map[Position]Position // portal hole -> its twin
@@ -217,7 +221,7 @@ func NewMap(cfg MapConfig) (*Map, error) {
 	}
 	m := &Map{
 		ID: cfg.ID, Name: cfg.Name, Description: cfg.Description, Difficulty: cfg.Difficulty,
-		MaxMoves: cfg.MaxMoves, Par: -1,
+		MaxMoves: cfg.MaxMoves, Par: -1, ForcedDescents: -1,
 	}
 	if m.Difficulty == "" {
 		m.Difficulty = "easy"
@@ -304,6 +308,10 @@ func NewMap(cfg MapConfig) (*Map, error) {
 		switch len(ps) {
 		case 0:
 		case 2:
+			if ps[0].Level != ps[1].Level {
+				add("portal %q must link two holes on the same level, found levels %d and %d", rune(g), ps[0].Level, ps[1].Level)
+				continue
+			}
 			m.Portals = append(m.Portals, Portal{Glyph: string(rune(g)), A: ps[0], B: ps[1]})
 			m.partner[ps[0]] = ps[1]
 			m.partner[ps[1]] = ps[0]
@@ -344,6 +352,7 @@ func NewMap(cfg MapConfig) (*Map, error) {
 	}
 	if path, ok := m.Shortest(); ok {
 		m.Par = len(path)
+		m.ForcedDescents = m.fewestDescents()
 	}
 	return m, nil
 }

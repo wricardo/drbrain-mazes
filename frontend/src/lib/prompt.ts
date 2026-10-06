@@ -41,7 +41,7 @@ export function buildSessionPrompt(origin: string, s: PromptSession): string {
 
 	return `Use this GraphQL API to play an existing ${TITLE} session and WIN it.
 
-${TITLE} is a tower-of-mazes puzzle played in fog. You steer a miner one tile at a time (UP, RIGHT, DOWN, LEFT) from START on level 0 (the bottom) to FINISH on level ${top} (the top) of a ${m.levelCount}-level tower, using stairs and portals to change level. There is no program to write: you send moves, and you win the moment you step on FINISH.
+${TITLE} is a tower-of-mazes puzzle played in fog. You steer a miner one tile at a time (UP, RIGHT, DOWN, LEFT) from START on level 0 (the bottom) to FINISH on level ${top} (the top) of a ${m.levelCount}-level tower, using stairs to change level and portals to hop within a level. There is no program to write: you send moves, and you win the moment you step on FINISH.
 
 Session ID: ${s.id}
 GraphQL endpoint: ${origin}/graphql
@@ -58,13 +58,13 @@ ${m.description}
 The server never reveals other levels. You learn the tower by exploring it: every response to move / bulkMove / reset / session carries \`view\`, the layout of the level the miner is on right now. Keep your own notes about each level you have seen. START is always on level 0 and FINISH always on the top level (${top}), but their exact positions are not given until you see them.
 
 Coordinates: level 0 is the BOTTOM; x = column, y = row; row 0 is the TOP of a level and y grows DOWNWARD.
-UP = y-1, RIGHT = x+1, DOWN = y+1, LEFT = x-1 (always on the same level; levels change only by stairs and portals).
+UP = y-1, RIGHT = x+1, DOWN = y+1, LEFT = x-1 (always on the same level; levels change only by stairs).
 
 The miner is on level ${s.state.pos.level} at (${s.state.pos.x},${s.state.pos.y}) right now. This is level ${v.level} as seen when the prompt was copied:
 ${layoutBlock(v.rows)}
 
 Glyphs: '.' void (blocked), 'o' stone (walkable), 'S' start, 'F' finish, 'U' stairs up, 'D' stairs down, '1'-'9' portal holes.
-Portals on this level (each digit appears exactly twice in the whole tower):
+Portals on this level (each digit appears exactly twice, both ends on this level):
 ${portalLines(v)}
 
 Limits: at most ${m.maxMoves} counted moves. Par (shortest route) = ${par}.
@@ -72,7 +72,7 @@ Limits: at most ${m.maxMoves} counted moves. Par (shortest route) = ${par}.
 ## Rules that matter
 - Stepping onto a stone, S or F just moves you. Void tiles and the edge of a level block the move: nothing happens and it is NOT counted (blocked: true, via NONE), so probing is free.
 - Stairs come in pairs at the same x,y: a 'U' on level l has a 'D' on level l+1. Stepping on 'U' lifts you to level+1 and you land ON that paired 'D'; stepping on 'D' drops you to level-1 and you land on the paired 'U'. Arriving does not trigger the stairs you land on (same as portals): step off and back on to use them. So wherever you can go up you can come back down from the same x,y. Effects never chain.
-- Portals: stepping on a hole teleports you to its twin (possibly on another level, which you cannot see until you get there). Arriving does not trigger the twin; step off and back on to teleport again.
+- Portals: stepping on a hole teleports you to its twin, always on this same level. Arriving does not trigger the twin; step off and back on to teleport again.
 - Every successful move counts. If moves reach ${m.maxMoves} without finishing you lose (MOVE_LIMIT). Winning on the last allowed move still wins.
 - A finished game (WON or LOST) refuses moves until reset (SESSION_TERMINAL). reset keeps attempts and bestMoves.
 
@@ -84,9 +84,7 @@ mutation { bulkMove(sessionID: "${s.id}", directions: [UP, RIGHT, RIGHT]) { view
 bulkMove stops at the first blocked move (or when the game ends), so a misread tile cannot send the rest of the batch from the wrong spot: check lastEvent.blocked and state.pos, then send a corrected plan. Add stopOnBlocked: false to skip blocked moves and carry on.
 3. Read the session any time:
 query { session(id: "${s.id}") { attempts bestMoves view { level levelCount rows } state { status lossReason moves pos { level x y } } } }
-4. Once you know a route, test it for free: simulate replays directions from a fresh start without touching the session:
-query { simulate(mapID: "${m.id}", moves: [UP, RIGHT, DOWN, LEFT], includeEvents: false) { status lossReason moves finalState { pos { level x y } moves status } } }
-5. If the status is LOST (or you want a better score), call reset, replay the best route you know and shorten it. Do not stop until state.status is WON, then report the winning direction list and its move count.
+4. If the status is LOST (or you want a better score), call reset, replay the best route you know and shorten it. Do not stop until state.status is WON, then report the winning direction list and its move count.
 
 Other mutations: reset, renameSession, deleteSession. Do not try to guess other sessions' ids and do not delete this one.`;
 }
@@ -103,6 +101,6 @@ You steer a miner one tile at a time (UP, RIGHT, DOWN, LEFT) from START (level 0
 2. GraphQL endpoint: ${origin}/graphql (Playground: ${origin}/playground).
 3. List the maps: query { maps { id name difficulty levelCount preview maxMoves parMoves } } and pick one (start with an easy one). Only level 0 (\`preview\`) is public.
 4. Create your own session: mutation { createSession(mapID: "MAP_ID", displayName: "my agent") { id view { level rows portals { glyph a { x y } b { x y } } } } }
-5. Explore with move / bulkMove, reading \`view\` after each move and keeping notes on every level; once you know a route, test it for free with the simulate query. If the game is LOST, reset and try again with what you learned.
+5. Explore with move / bulkMove, reading \`view\` after each move and keeping notes on every level. If the game is LOST, reset and try again with what you learned.
 6. Tell me the session id so I can watch it live at ${origin}/watch/SESSION_ID, and report the winning direction list and its move count.`;
 }

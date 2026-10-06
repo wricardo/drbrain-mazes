@@ -14,8 +14,8 @@ export interface Position {
 }
 
 /**
- * Two linked holes sharing a glyph digit ('1'..'9'). In a LevelView only the ends on that level are
- * listed: `a` is on the viewed level and `b` is set only when the twin is on the same level too.
+ * Two linked holes sharing a glyph digit ('1'..'9'), always on the same level. In a LevelView
+ * `a` is on the viewed level and `b` is its twin.
  */
 export interface Portal {
 	glyph: string;
@@ -37,6 +37,10 @@ export interface GameMap {
 	maxMoves: number;
 	/** Shortest winning route; null when the finish is unreachable. */
 	parMoves: number | null;
+	/** Fewest stairs any winning route takes (levelCount - 1 + 2 * forcedDescents); null when unreachable. */
+	minLevelChanges: number | null;
+	/** Fewest down stairs any winning route takes (0 = climb straight up); null when unreachable. */
+	forcedDescents: number | null;
 }
 
 /** Full map for the editor (admin only). Start is always on level 0, finish on the top level. */
@@ -55,6 +59,8 @@ export interface AdminMap {
 	portals: Portal[];
 	maxMoves: number;
 	parMoves: number | null;
+	minLevelChanges: number | null;
+	forcedDescents: number | null;
 }
 
 /** Fog: the only part of the map a player can see, the level they stand on. */
@@ -123,6 +129,8 @@ export interface MapValidationResult {
 	issues: { message: string }[];
 	finishReachable: boolean;
 	parMoves: number | null;
+	minLevelChanges: number | null;
+	forcedDescents: number | null;
 }
 
 export interface MapInput {

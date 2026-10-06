@@ -8,9 +8,8 @@ afterEach(cleanup);
 const view = (level = 0): LevelView => ({
 	level,
 	levelCount: 3,
-	rows: ['So1.', 'oUo.', '2..2'],
+	rows: ['So..', 'oUo.', '2..2'],
 	portals: [
-		{ glyph: '1', a: { level, x: 2, y: 0 }, b: null },
 		{ glyph: '2', a: { level, x: 0, y: 2 }, b: { level, x: 3, y: 2 } },
 		{ glyph: '2', a: { level, x: 3, y: 2 }, b: { level, x: 0, y: 2 } }
 	]
@@ -21,12 +20,11 @@ const game = (level: number, x: number, y: number, moves = 0): GameState => ({
 });
 
 describe('Board', () => {
-	it('draws the visible level: tiles, one pipe for a same-level pair, a "?" for a twin out of sight', () => {
+	it('draws the visible level: tiles and one pipe for a portal pair', () => {
 		render(Board, { view: view(), game: game(0, 1, 1) });
 		expect(screen.getAllByTestId('tile-stone')).toHaveLength(3);
-		expect(screen.getAllByTestId('hole')).toHaveLength(3);
+		expect(screen.getAllByTestId('hole')).toHaveLength(2);
 		expect(screen.getAllByTestId('pipe')).toHaveLength(1);
-		expect(screen.getAllByTestId('hidden-twin')).toHaveLength(1);
 		expect(screen.getByTestId('board').getAttribute('aria-label')).toMatch(/Level 1 of 3.*column 1, row 1/);
 	});
 

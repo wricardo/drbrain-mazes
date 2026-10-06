@@ -26,15 +26,18 @@ A small tower diagram next to the board shows how many levels there are and whic
 
 ## Maps
 
-There are 13 maps, from easy to hard:
+There are 16 maps, from easy to hard:
 
 - **First Steps**, **Ladder**, **Portal Twins**, **Pipe Dream** and **Two Floors** teach walking, stairs and portals.
 - **Lost Garden** is one big level and no tricks, just a long way out.
 - **Wormholes** is a big maze with three pipes: a pipe can save you a long walk or send you back.
 - **Four Floors** and **Tower Maze** are corridor mazes across several levels, with staircases that only take you somewhere you have already been.
-- **Portal Climb** mixes stairs with pipes that jump across levels.
+- **Portal Climb** mixes stairs with pipes.
 - **Deep Tower** and **Grand Tower** are five- and six-level mazes with pipes and staircases everywhere.
 - **Miner's Shaft** is a six-level tower whose second level is a patchwork of islands that only the pipes and arrows connect. The shortcut up is a trap.
+- **Switchback** is four small floors where the only way up often starts by going down. Twice.
+- **False Summit** has stairs by the door that race to the top and leave you one tile from the finish, with no way across.
+- **Portal Locks** splits every floor into islands that only pipes connect, and the nearest stairs are rarely the right ones.
 
 Every map can be solved. Each one has been checked against a known solution.
 
@@ -56,7 +59,7 @@ mutation { move(sessionID: "…", direction: RIGHT) { state { status moves } vie
 
 Moves are `UP`, `RIGHT`, `DOWN` and `LEFT`. The response after each move shows the level you are on now. Read the session (or subscribe to it) until the status is `WON` or `LOST`.
 
-The server never shows an agent more than the current level, just like a person. The `simulate` query plays a list of moves from a fresh start, so an agent can test an idea without touching its session.
+The server never shows an agent more than the current level, just like a person. Every test of an idea is a real move in a session; `reset` starts over.
 
 Some questions worth exploring:
 

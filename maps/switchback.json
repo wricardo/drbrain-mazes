@@ -1,0 +1,45 @@
+{
+  "id": "switchback",
+  "name": "Switchback",
+  "description": "Four small floors that never connect the way you expect. Sometimes the only way up starts by going down.",
+  "difficulty": "hard",
+  "max_moves": 70,
+  "levels": [
+    [
+      "U......",
+      "o......",
+      "o......",
+      "o......",
+      "o......",
+      "o......",
+      "SoooU.."
+    ],
+    [
+      "DoooooU",
+      ".......",
+      ".......",
+      ".UoU...",
+      ".......",
+      ".......",
+      "....Doo"
+    ],
+    [
+      "...UooD",
+      "......o",
+      "...oooo",
+      "oD.D...",
+      "o.....U",
+      "o.....o",
+      "U.....U"
+    ],
+    [
+      "...Doo.",
+      ".......",
+      "......F",
+      "......o",
+      "......D",
+      ".......",
+      "DoooooD"
+    ]
+  ]
+}

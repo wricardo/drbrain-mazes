@@ -12,7 +12,9 @@ const map: GameMap = {
 	levelCount: 3,
 	preview: ['SoU', '.o.', '1.2'],
 	maxMoves: 40,
-	parMoves: 4
+	parMoves: 4,
+	minLevelChanges: 2,
+	forcedDescents: 0
 };
 
 function session(over: Partial<PromptSession> = {}): PromptSession {
@@ -86,7 +88,7 @@ describe('buildSessionPrompt', () => {
 	});
 
 	it('uses the real Mazes API calls with this session and map', () => {
-		expect(p).toContain('simulate(mapID: "tiny"');
+		expect(p).not.toContain('simulate');
 		expect(p).toContain('move(sessionID: "abc123"');
 		expect(p).toContain('bulkMove(sessionID: "abc123"');
 		expect(p).toContain('view {');

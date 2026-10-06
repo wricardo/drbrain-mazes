@@ -85,35 +85,26 @@ func (f *fakeService) BulkMove(id string, dirs []engine.Direction, stopOnBlocked
 	return f.GetSession(id)
 }
 
-func (f *fakeService) Simulate(mapID string, dirs []engine.Direction, includeEvents bool) (*service.SimulationResult, error) {
-	m, err := f.GetMap(mapID)
-	if err != nil {
-		return nil, err
-	}
-	evs, st := engine.Simulate(m, dirs, includeEvents)
-	return &service.SimulationResult{Status: st.Status, LossReason: st.LossReason, Moves: st.Moves, FinalState: st, Map: m, Events: evs}, nil
-}
-
 // Fog markers: rows that exist on exactly one level, so a leak of that level
 // is detectable by substring.
 const (
 	level0Row = "SoU."
 	level1Top = "..D."
-	level1Row = "..U."
-	level1Mrk = "1.2o"
-	level2Row = ".FD2"
+	level1Row = "..U2"
+	level1Mrk = "o.2o"
+	level2Row = ".FD."
 )
 
 // testMapConfig is a 3-level tower with paired stairs. RIGHT, RIGHT takes the
 // stairs up and lands on the D at level 1 (2,0); DOWN steps on the U at (2,1),
 // landing on the D at level 2 (2,1); LEFT steps onto F: par 4.
-// Portal 1 joins level 0 (3,1) with level 1 (0,2); portal 2 joins level 1
-// (2,2) with level 2 (3,1).
+// Portal 1 joins level 0 (3,1) with level 0 (3,2); portal 2 joins level 1
+// (2,2) with level 1 (3,1).
 func testMapConfig(id string) engine.MapConfig {
 	return engine.MapConfig{
 		ID: id, Name: id,
 		Levels: [][]string{
-			{level0Row, "...1", "...."},
+			{level0Row, "...1", "...1"},
 			{level1Top, level1Row, level1Mrk},
 			{"....", level2Row, "...."},
 		},
@@ -233,11 +224,14 @@ func TestCreateUpdateMapSemantics(t *testing.T) {
 func TestPublicMapConversionHidesLayout(t *testing.T) {
 	m := mustMap(t, "m")
 	got := toMap(m)
-	if got.LevelCount != 3 || got.Width != 4 || got.Height != 3 || !reflect.DeepEqual(got.Preview, []string{level0Row, "...1", "...."}) {
+	if got.LevelCount != 3 || got.Width != 4 || got.Height != 3 || !reflect.DeepEqual(got.Preview, []string{level0Row, "...1", "...1"}) {
 		t.Fatalf("catalog entry: %+v", got)
 	}
 	if got.MaxMoves != engine.DefaultMaxMoves || got.ParMoves == nil || *got.ParMoves != 4 {
 		t.Fatalf("maxMoves/parMoves = %d/%v, want default/4", got.MaxMoves, got.ParMoves)
+	}
+	if got.MinLevelChanges == nil || *got.MinLevelChanges != 2 || got.ForcedDescents == nil || *got.ForcedDescents != 0 {
+		t.Fatalf("minLevelChanges/forcedDescents = %v/%v, want 2/0", got.MinLevelChanges, got.ForcedDescents)
 	}
 	raw, _ := json.Marshal(got)
 	for _, leak := range []string{level1Row, level1Mrk, level2Row, "finish", "levels"} {
@@ -257,8 +251,9 @@ func TestPublicMapConversionHidesLayout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if toMap(unreachable).ParMoves != nil || toAdminMap(unreachable).ParMoves != nil {
-		t.Fatal("parMoves must be null when the finish is unreachable")
+	pub, adm := toMap(unreachable), toAdminMap(unreachable)
+	if pub.ParMoves != nil || adm.ParMoves != nil || pub.MinLevelChanges != nil || adm.MinLevelChanges != nil || pub.ForcedDescents != nil || adm.ForcedDescents != nil {
+		t.Fatal("parMoves/minLevelChanges/forcedDescents must be null when the finish is unreachable")
 	}
 }
 
@@ -271,7 +266,7 @@ func TestAdminMapConversionIsFull(t *testing.T) {
 	if *got.Start != (model.Position{}) || *got.Finish != (model.Position{Level: 2, X: 1, Y: 1}) || *got.ParMoves != 4 {
 		t.Fatalf("start/finish/par: %v %v %v", got.Start, got.Finish, got.ParMoves)
 	}
-	if len(got.Portals) != 2 || got.Portals[0].Glyph != "1" || *got.Portals[0].A != (model.Position{Level: 0, X: 3, Y: 1}) || *got.Portals[0].B != (model.Position{Level: 1, X: 0, Y: 2}) {
+	if len(got.Portals) != 2 || got.Portals[0].Glyph != "1" || *got.Portals[0].A != (model.Position{Level: 0, X: 3, Y: 1}) || *got.Portals[0].B != (model.Position{Level: 0, X: 3, Y: 2}) {
 		t.Fatalf("portals = %+v", got.Portals)
 	}
 	got.Levels[0][0] = "xxxx"
@@ -367,45 +362,6 @@ func TestMoveResolversConvertAndPropagate(t *testing.T) {
 	}
 	if _, err := m.BulkMove(ctx, "s", nil, nil); codeOf(t, err) != service.CodeSessionTerminal {
 		t.Fatalf("BulkMove err = %v", err)
-	}
-}
-
-func TestSimulateResolver(t *testing.T) {
-	fs := &fakeService{maps: map[string]*engine.Map{"m": mustMap(t, "m")}}
-	q := &queryResolver{&Resolver{Service: fs}}
-	ctx := context.Background()
-	yes := true
-
-	win := []model.Direction{model.DirectionRight, model.DirectionRight, model.DirectionDown, model.DirectionLeft}
-	res, err := q.Simulate(ctx, "m", win, &yes)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Status != model.StatusWon || res.Moves != 4 || res.LossReason != nil || res.FinalState.Moves != 4 || len(res.Events) != 4 {
-		t.Fatalf("simulate: %+v", res)
-	}
-	if ev := res.Events[1]; ev.Via != model.ViaStairsUp || ev.Direction != model.DirectionRight || ev.To.Level != 1 || ev.Stepped.Level != 0 || ev.Blocked {
-		t.Fatalf("stairs event: %+v", ev)
-	}
-	if ev := res.Events[2]; ev.Via != model.ViaStairsUp || ev.Status != model.StatusPlaying || *ev.To != (model.Position{Level: 2, X: 2, Y: 1}) || ev.Stepped.Level != 1 {
-		t.Fatalf("second stairs event: %+v", ev)
-	}
-	if ev := res.Events[3]; ev.Via != model.ViaWalk || ev.Status != model.StatusWon || ev.To.Level != 2 {
-		t.Fatalf("finish event: %+v", ev)
-	}
-
-	// Events are only produced on request; blocked moves are reported as such.
-	res, err = q.Simulate(ctx, "m", []model.Direction{model.DirectionUp}, nil)
-	if err != nil || res.Events != nil || res.Status != model.StatusReady || res.Moves != 0 {
-		t.Fatalf("no events: %+v %v", res, err)
-	}
-	res, _ = q.Simulate(ctx, "m", []model.Direction{model.DirectionUp}, &yes)
-	if len(res.Events) != 1 || !res.Events[0].Blocked || res.Events[0].Via != model.ViaNone {
-		t.Fatalf("blocked event: %+v", res.Events)
-	}
-
-	if _, err := q.Simulate(ctx, "nope", win, nil); codeOf(t, err) != service.CodeNotFound {
-		t.Fatalf("unknown map: %v", err)
 	}
 }
 
@@ -626,21 +582,23 @@ func playTo(t *testing.T, dirs ...engine.Direction) *service.Session {
 // on and nothing else about the tower, wherever the conversion is used.
 func TestSessionViewIsFogged(t *testing.T) {
 	rows := map[int][]string{
-		0: {level0Row, "...1", "...."},
+		0: {level0Row, "...1", "...1"},
 		1: {level1Top, level1Row, level1Mrk},
 		2: {"....", level2Row, "...."},
 	}
+	type pv struct{ a, b model.Position }
 	cases := []struct {
 		name    string
 		dirs    []engine.Direction
 		level   int
-		portals map[string]model.Position // glyph -> a; twins are always hidden here
+		portals map[string]pv // glyph -> a/b; both ends always on this level
 	}{
-		{"start on level 0", nil, 0, map[string]model.Position{"1": {Level: 0, X: 3, Y: 1}}},
+		{"start on level 0", nil, 0,
+			map[string]pv{"1": {a: model.Position{Level: 0, X: 3, Y: 1}, b: model.Position{Level: 0, X: 3, Y: 2}}}},
 		{"after stairs on level 1", []engine.Direction{engine.DirRight, engine.DirRight}, 1,
-			map[string]model.Position{"1": {Level: 1, X: 0, Y: 2}, "2": {Level: 1, X: 2, Y: 2}}},
+			map[string]pv{"2": {a: model.Position{Level: 1, X: 3, Y: 1}, b: model.Position{Level: 1, X: 2, Y: 2}}}},
 		{"after second stairs on level 2", []engine.Direction{engine.DirRight, engine.DirRight, engine.DirDown}, 2,
-			map[string]model.Position{"2": {Level: 2, X: 3, Y: 1}}},
+			map[string]pv{}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -654,8 +612,9 @@ func TestSessionViewIsFogged(t *testing.T) {
 					t.Fatalf("%s portals = %+v, want %v", name, v.Portals, tc.portals)
 				}
 				for _, p := range v.Portals {
-					if want, ok := tc.portals[p.Glyph]; !ok || *p.A != want || p.B != nil {
-						t.Fatalf("%s portal %s = a %v b %v, want a %v and a hidden twin", name, p.Glyph, p.A, p.B, want)
+					want, ok := tc.portals[p.Glyph]
+					if !ok || *p.A != want.a || p.B == nil || *p.B != want.b {
+						t.Fatalf("%s portal %s = a %v b %v, want a %v b %v", name, p.Glyph, p.A, p.B, want.a, want.b)
 					}
 				}
 				// Nothing else of the tower is serialized: only the viewed level and
@@ -689,8 +648,8 @@ func contains(ss []string, s string) bool {
 	return false
 }
 
-// A portal whose twin is on the same level reveals the twin; otherwise the
-// twin's location stays hidden.
+// A portal's view always reveals its twin, since both ends are on the same
+// level; a level with no portal holes on it reports none.
 func TestLevelViewRevealsSameLevelTwin(t *testing.T) {
 	m, err := engine.NewMap(engine.MapConfig{
 		ID: "twins", Name: "t",

@@ -19,17 +19,18 @@ import (
 // (Map.preview); every row below must never reach a player standing on level 0.
 const (
 	hiddenLevel1Top = "..D."
-	hiddenLevel1Row = "..U."
-	hiddenLevel1Mrk = "1.2o"
-	hiddenFinishRow = ".FD2"
+	hiddenLevel1Row = "..U2"
+	hiddenLevel1Mrk = "o.2o"
+	hiddenFinishRow = ".FD."
 )
 
-// fogCfg: 3 levels. Level 0 (3,1) holds portal 1 whose twin is on level 1;
-// the finish is on the top level.
+// fogCfg: 3 levels. Level 0 (3,1)-(3,2) holds portal 1, entirely on level 0;
+// level 1 (3,1)-(2,2) holds portal 2, entirely on level 1; the finish is on
+// the top level.
 var fogCfg = engine.MapConfig{
 	ID: "fog", Name: "Fog",
 	Levels: [][]string{
-		{"SoU.", "...1", "...."},
+		{"SoU.", "...1", "...1"},
 		{hiddenLevel1Top, hiddenLevel1Row, hiddenLevel1Mrk},
 		{"....", hiddenFinishRow, "...."},
 	},
@@ -124,10 +125,10 @@ func TestSessionsNeverLeakOtherLevels(t *testing.T) {
 	if view["level"] != float64(0) || view["levelCount"] != float64(3) || len(view["rows"].([]any)) != 3 || view["rows"].([]any)[0] != "SoU." {
 		t.Fatalf("view at start = %v", view)
 	}
-	// Portal 1 is listed with its level-0 end only; the twin on level 1 is hidden.
+	// Portal 1's twin is on level 0 too, so it is listed with both ends.
 	portals := view["portals"].([]any)
-	if len(portals) != 1 || portals[0].(map[string]any)["b"] != nil {
-		t.Fatalf("portals = %v, want one hole with a hidden twin", portals)
+	if len(portals) != 1 || portals[0].(map[string]any)["b"] == nil {
+		t.Fatalf("portals = %v, want one hole with its twin", portals)
 	}
 
 	var mu sync.Mutex

@@ -66,12 +66,12 @@ func toPortals(ps []engine.Portal) []*model.Portal {
 	return out
 }
 
-// toParMoves hides the engine's -1 "unreachable" marker as null.
-func toParMoves(par int) *int {
-	if par < 0 {
+// nullIfNegative hides the engine's -1 "unreachable" marker as null.
+func nullIfNegative(n int) *int {
+	if n < 0 {
 		return nil
 	}
-	return &par
+	return &n
 }
 
 // toMap converts a map to the public catalog entry. It deliberately exposes
@@ -84,9 +84,11 @@ func toMap(m *engine.Map) *model.Map {
 	return &model.Map{
 		ID: m.ID, Name: m.Name, Description: m.Description, Difficulty: m.Difficulty,
 		Width: m.Width, Height: m.Height, LevelCount: m.LevelCount(),
-		Preview:  append([]string{}, m.View(0).Rows...),
-		MaxMoves: m.MaxMoves,
-		ParMoves: toParMoves(m.Par),
+		Preview:         append([]string{}, m.View(0).Rows...),
+		MaxMoves:        m.MaxMoves,
+		ParMoves:        nullIfNegative(m.Par),
+		MinLevelChanges: nullIfNegative(m.MinLevelChanges()),
+		ForcedDescents:  nullIfNegative(m.ForcedDescents),
 	}
 }
 
@@ -103,17 +105,20 @@ func toAdminMap(m *engine.Map) *model.AdminMap {
 	return &model.AdminMap{
 		ID: m.ID, Name: m.Name, Description: m.Description, Difficulty: m.Difficulty,
 		Width: m.Width, Height: m.Height, LevelCount: m.LevelCount(),
-		Levels:   levels,
-		Start:    toPosition(m.Start),
-		Finish:   toPosition(m.Finish),
-		Portals:  toPortals(m.Portals),
-		MaxMoves: m.MaxMoves,
-		ParMoves: toParMoves(m.Par),
+		Levels:          levels,
+		Start:           toPosition(m.Start),
+		Finish:          toPosition(m.Finish),
+		Portals:         toPortals(m.Portals),
+		MaxMoves:        m.MaxMoves,
+		ParMoves:        nullIfNegative(m.Par),
+		MinLevelChanges: nullIfNegative(m.MinLevelChanges()),
+		ForcedDescents:  nullIfNegative(m.ForcedDescents),
 	}
 }
 
 // toLevelView converts the fogged view of level l of m: the rows of that
-// level and the portal ends on it (a twin on another level stays hidden).
+// level and the portal ends on it. Both ends of a portal are always on the
+// same level, so a visible portal always shows its twin too.
 func toLevelView(m *engine.Map, l int) *model.LevelView {
 	v := m.View(l)
 	portals := make([]*model.Portal, len(v.Portals))
@@ -196,20 +201,4 @@ func toSession(s *service.Session) *model.Session {
 
 func toSessionUpdate(s *service.Session) *model.SessionUpdate {
 	return &model.SessionUpdate{Seq: int(s.Seq), Session: toSession(s), Event: toMoveEvent(s.LastEvent)}
-}
-
-func toSimulationResult(r *service.SimulationResult) *model.SimulationResult {
-	out := &model.SimulationResult{
-		Status:     model.Status(r.Status),
-		LossReason: toLossReason(r.LossReason),
-		Moves:      r.Moves,
-		FinalState: toGameState(&r.FinalState),
-	}
-	if r.Events != nil {
-		out.Events = make([]*model.MoveEvent, len(r.Events))
-		for i := range r.Events {
-			out.Events[i] = toMoveEvent(&r.Events[i])
-		}
-	}
-	return out
 }

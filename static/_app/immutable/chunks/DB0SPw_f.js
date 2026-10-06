@@ -19,6 +19,8 @@ var e={NOT_FOUND:`Not found`,SESSION_TERMINAL:`Game is over — reset to try aga
   preview
   maxMoves
   parMoves
+  minLevelChanges
+  forcedDescents
 `,c=`
   id
   name
@@ -33,6 +35,8 @@ var e={NOT_FOUND:`Not found`,SESSION_TERMINAL:`Game is over — reset to try aga
   portals { ${o} }
   maxMoves
   parMoves
+  minLevelChanges
+  forcedDescents
 `,l=`
   id
   displayName
@@ -115,6 +119,8 @@ var e={NOT_FOUND:`Not found`,SESSION_TERMINAL:`Game is over — reset to try aga
       issues { message }
       finishReachable
       parMoves
+      minLevelChanges
+      forcedDescents
     }
   }
 `;export{u as a,p as c,y as d,x as f,b as i,f as l,r as m,v as n,h as o,n as p,m as r,g as s,d as t,_ as u};

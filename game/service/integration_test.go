@@ -49,7 +49,7 @@ func TestRestartRestoresSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Stairs up, portal to level 0, then a blocked LEFT (bumps seq, not persisted
+	// Stairs up, portal on level 1, then a blocked LEFT (bumps seq, not persisted
 	// until Shutdown).
 	for _, d := range []engine.Direction{right, right, right, left} {
 		if _, err := svc1.Move(s.ID, d); err != nil {
@@ -58,7 +58,7 @@ func TestRestartRestoresSession(t *testing.T) {
 	}
 	svc1.Shutdown()
 	want := mustGet(t, svc1, s.ID)
-	if want.State.Pos != (engine.Position{Level: 0, X: 3, Y: 2}) || want.State.Moves != 3 || !want.LastEvent.Blocked {
+	if want.State.Pos != (engine.Position{Level: 1, X: 3, Y: 1}) || want.State.Moves != 3 || !want.LastEvent.Blocked {
 		t.Fatalf("pre-restart state: %+v", want.State)
 	}
 

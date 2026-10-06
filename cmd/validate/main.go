@@ -72,6 +72,7 @@ func checkOne(file, id, solDir string) error {
 	if st.Moves < m.Par {
 		return fmt.Errorf("solution wins in %d moves, below par %d (shortest route is wrong)", st.Moves, m.Par)
 	}
-	fmt.Printf("OK   %-20s WON in %d moves (par %d)\n", id, st.Moves, m.Par)
+	fmt.Printf("OK   %-20s WON in %d moves (par %d, %d levels, min level changes %d, forced descents %d)\n",
+		id, st.Moves, m.Par, m.LevelCount(), m.MinLevelChanges(), m.ForcedDescents)
 	return nil
 }

@@ -16,13 +16,13 @@ const (
 	solDir  = "../solutions"
 )
 
-// towerCfg: paired stairs, a portal pair across levels and the finish on
-// level 1. RIGHT, RIGHT, RIGHT, UP, DOWN wins: par 5.
+// towerCfg: paired stairs and a portal pair on level 0 that bridges two
+// floor islands, finish on level 1. RIGHT, DOWN, DOWN, UP, DOWN wins: par 5.
 var towerCfg = engine.MapConfig{
 	ID: "tower", Name: "Tower", MaxMoves: 6,
 	Levels: [][]string{
-		{"SoU.", "...U", "...1"},
-		{"..D1", "...D", "...F"},
+		{"SoU.", ".o.U", ".1o1"},
+		{"..D.", "...D", "...F"},
 	},
 }
 
@@ -69,7 +69,7 @@ func TestEveryMapSolutionWinsWithGoldenMoves(t *testing.T) {
 	golden := map[string]int{
 		"first_steps": 9, "ladder": 17, "portal_twins": 11, "pipe_dream": 9, "two_floors": 18, "lost_garden": 90,
 		"wormholes": 78, "four_floors": 72, "portal_climb": 80, "tower_maze": 62, "miners_shaft": 71,
-		"deep_tower": 94, "grand_tower": 114,
+		"deep_tower": 93, "grand_tower": 112, "switchback": 34, "false_summit": 66, "portal_locks": 46,
 	}
 	files, _ := filepath.Glob(filepath.Join(mapsDir, "*.json"))
 	if len(files) != len(golden) {
@@ -97,7 +97,7 @@ func TestEveryMapSolutionWinsWithGoldenMoves(t *testing.T) {
 
 func TestCheckValidMap(t *testing.T) {
 	res := Check(towerCfg)
-	if !res.Valid || len(res.Issues) != 0 || !res.FinishReachable || res.ParMoves != 5 {
+	if !res.Valid || len(res.Issues) != 0 || !res.FinishReachable || res.ParMoves != 5 || res.MinLevelChanges != 1 || res.ForcedDescents != 0 {
 		t.Fatalf("tower: %+v", res)
 	}
 	if res.Issues == nil {
@@ -107,7 +107,7 @@ func TestCheckValidMap(t *testing.T) {
 
 func TestCheckStructuralIssues(t *testing.T) {
 	res := Check(engine.MapConfig{ID: "x", Name: "x", Levels: [][]string{{"...", "...", "..."}}})
-	if res.Valid || len(res.Issues) == 0 || res.FinishReachable || res.ParMoves != -1 {
+	if res.Valid || len(res.Issues) == 0 || res.FinishReachable || res.ParMoves != -1 || res.MinLevelChanges != -1 || res.ForcedDescents != -1 {
 		t.Fatalf("want invalid with issues, got %+v", res)
 	}
 	// Dimension errors abort early and still report.
@@ -173,13 +173,13 @@ func TestCheckReachableOnlyViaPortal(t *testing.T) {
 
 func TestCheckSolution(t *testing.T) {
 	m := mustMap(t, towerCfg)
-	win := []engine.Direction{right, right, right, up, down}
+	win := []engine.Direction{right, down, down, up, down}
 
 	if err := CheckSolution(m, win); err != nil {
 		t.Fatalf("winning solution rejected: %v", err)
 	}
 	// Blocked attempts are free and directions after the win are ignored.
-	if err := CheckSolution(m, []engine.Direction{up, down, right, right, right, up, down, left, left}); err != nil {
+	if err := CheckSolution(m, []engine.Direction{up, down, right, down, down, up, down, left, left}); err != nil {
 		t.Fatalf("solution with blocked and trailing moves rejected: %v", err)
 	}
 	for name, dirs := range map[string][]engine.Direction{

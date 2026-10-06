@@ -110,13 +110,11 @@ export interface PortalHole {
 	glyph: string;
 	x: number;
 	y: number;
-	/** True when the twin is on another level (its location is hidden by the fog). */
-	twinElsewhere: boolean;
 }
 
 /**
- * Portal decorations of one visible level: every hole (read off the rows), a pipe for each
- * pair whose twin is on the same level, and a flag on holes whose twin is out of sight.
+ * Portal decorations of one visible level: every hole (read off the rows) and a pipe for
+ * each pair (both ends are always on the same level).
  */
 export function portalLinks(rows: string[], portals: Pick<Portal, 'glyph' | 'b'>[]): { holes: PortalHole[]; pipes: PortalPipe[] } {
 	const joined = new Set(portals.filter((p) => p.b).map((p) => p.glyph));
@@ -125,7 +123,7 @@ export function portalLinks(rows: string[], portals: Pick<Portal, 'glyph' | 'b'>
 	rows.forEach((row, y) =>
 		[...row].forEach((glyph, x) => {
 			if (!isPortalGlyph(glyph)) return;
-			holes.push({ glyph, x, y, twinElsewhere: !joined.has(glyph) });
+			holes.push({ glyph, x, y });
 			byGlyph.set(glyph, [...(byGlyph.get(glyph) ?? []), { x, y }]);
 		})
 	);

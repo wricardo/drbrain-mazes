@@ -364,7 +364,7 @@
 					{#if validation.valid || validation.parMoves !== null}
 						<p class="mt-1" data-testid="validation-par">
 							{validation.finishReachable && validation.parMoves !== null
-								? `Par (shortest route): ${validation.parMoves} moves.`
+								? `Par (shortest route): ${validation.parMoves} moves. Fewest level changes: ${validation.minLevelChanges}, forced descents: ${validation.forcedDescents}.`
 								: 'The finish cannot be reached from the start.'}
 						</p>
 					{/if}

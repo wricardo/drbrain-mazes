@@ -91,12 +91,11 @@ func TestStairsAreTwoWay(t *testing.T) {
 
 func TestViewHidesOtherLevels(t *testing.T) {
 	m := mustMap(t, MapConfig{ID: "v", Name: "v", Levels: [][]string{
-		{"S12", "...", "..."},
-		{"o1o", "...", "..."},
-		{"o2F", "...", "..."},
+		{"S12", "21.", "..."},
+		{"ooo", "...", "..F"},
 	}})
 	v := m.View(0)
-	if v.Level != 0 || v.LevelCount != 3 || len(v.Rows) != 3 || v.Rows[0] != "S12" {
+	if v.Level != 0 || v.LevelCount != 2 || len(v.Rows) != 3 || v.Rows[0] != "S12" {
 		t.Fatalf("view: %+v", v)
 	}
 	byGlyph := map[string]PortalView{}
@@ -104,16 +103,19 @@ func TestViewHidesOtherLevels(t *testing.T) {
 		byGlyph[p.Glyph] = p
 	}
 	if len(byGlyph) != 2 {
-		t.Fatalf("level 0 holds ends of portals 1 and 2: %+v", v.Portals)
+		t.Fatalf("level 0 holds both portals 1 and 2: %+v", v.Portals)
 	}
 	for _, g := range []string{"1", "2"} {
 		p := byGlyph[g]
-		if p.A.Level != 0 || p.B != nil {
-			t.Fatalf("portal %s: twin is on another level and must stay hidden: %+v", g, p)
+		if p.A.Level != 0 || p.B == nil || p.B.Level != 0 {
+			t.Fatalf("portal %s: both ends must be on level 0: %+v", g, p)
 		}
 	}
 	if got := m.View(5); len(got.Rows) != 0 || got.Level != 5 {
 		t.Fatalf("out of range view: %+v", got)
+	}
+	if got := m.View(1); len(got.Portals) != 0 {
+		t.Fatalf("level 1 has no portals: %+v", got.Portals)
 	}
 	v.Rows[0] = "xxx"
 	if m.Levels[0][0] != "S12" {
@@ -202,15 +204,15 @@ func TestPortalTeleportsWithoutRetrigger(t *testing.T) {
 	}
 }
 
-func TestPortalAcrossLevels(t *testing.T) {
+func TestPortalAcrossLevelsRejected(t *testing.T) {
 	cfg := MapConfig{ID: "x", Name: "x", Levels: [][]string{
 		{"S2.", "...", "..."},
 		{"2oF", "...", "..."},
 	}}
-	m := mustMap(t, cfg)
-	_, st := Simulate(m, dirs("RRR"), false)
-	if st.Status != StatusWon || st.Pos != m.Finish {
-		t.Fatalf("status=%s pos=%v", st.Status, st.Pos)
+	_, err := NewMap(cfg)
+	var ve *ValidationError
+	if !errors.As(err, &ve) || !strings.Contains(err.Error(), "same level") {
+		t.Fatalf("err = %v, want a same-level ValidationError", err)
 	}
 }
 
@@ -237,6 +239,9 @@ func TestNewMapIssues(t *testing.T) {
 		{"two finishes", func(c *MapConfig) { c.Levels = [][]string{{"SFF", "...", "..."}} }, "exactly one finish"},
 		{"lonely portal", func(c *MapConfig) { c.Levels = [][]string{{"S1F", "...", "..."}} }, "exactly twice"},
 		{"triple portal", func(c *MapConfig) { c.Levels = [][]string{{"S1F", "1.1", "..."}} }, "exactly twice"},
+		{"portal across levels", func(c *MapConfig) {
+			c.Levels = [][]string{{"S1F", "...", "..."}, {"o1o", "...", "..."}}
+		}, "same level"},
 		{"stairs off tower top", func(c *MapConfig) { c.Levels = [][]string{{"SUF", "...", "..."}} }, "off the tower"},
 		{"up stairs land on void", func(c *MapConfig) {
 			c.Levels = [][]string{{"SUo", "...", "..."}, {"o.F", "...", "..."}}
@@ -308,11 +313,31 @@ func TestShortestAndUnreachable(t *testing.T) {
 	}
 }
 
+func TestForcedDescentsAndMinLevelChanges(t *testing.T) {
+	// Up to level 1 at x1 is a pocket (x1..x3); the way on is down the D at
+	// x3, along level 0 to the U at x5, up to level 1 x5, then up again at x6.
+	m := mustMap(t, MapConfig{ID: "dip", Name: "d", Levels: [][]string{
+		{"SU.UoU.", ".......", "......."},
+		{".DoD.DU", ".......", "......."},
+		{".....FD", ".......", "......."},
+	}})
+	if m.Par != 7 || m.ForcedDescents != 1 || m.MinLevelChanges() != 4 {
+		t.Fatalf("par=%d descents=%d changes=%d, want 7/1/4", m.Par, m.ForcedDescents, m.MinLevelChanges())
+	}
+	if m := mustMap(t, tower); m.ForcedDescents != 0 || m.MinLevelChanges() != m.LevelCount()-1 {
+		t.Fatalf("straight climb: descents=%d changes=%d", m.ForcedDescents, m.MinLevelChanges())
+	}
+	m = mustMap(t, MapConfig{ID: "u", Name: "u", Levels: [][]string{{"So.", "...", "..F"}}})
+	if m.ForcedDescents != -1 || m.MinLevelChanges() != -1 {
+		t.Fatalf("unreachable: descents=%d changes=%d", m.ForcedDescents, m.MinLevelChanges())
+	}
+}
+
 func TestShortestPathReplays(t *testing.T) {
 	// The BFS route must be a legal winning move list (stairs + portals included).
 	m := mustMap(t, MapConfig{ID: "r", Name: "r", Levels: [][]string{
-		{"S1oU", "....", "..2o", "o..1"},
-		{"o..D", "....", "2oFo", "...."},
+		{"S1oU", "....", "..oo", "o..1"},
+		{"oooD", "oooo", "ooFo", "oooo"},
 	}})
 	path, ok := m.Shortest()
 	if !ok {
@@ -338,8 +363,17 @@ func TestShippedMapsGolden(t *testing.T) {
 		"portal_climb": 80,
 		"tower_maze":   62,
 		"miners_shaft": 71,
-		"deep_tower":   94,
-		"grand_tower":  114,
+		"deep_tower":   93,
+		"grand_tower":  112,
+		"switchback":   34,
+		"false_summit": 66,
+		"portal_locks": 46,
+	}
+	// Fewest down stairs a winning route needs; maps not listed climb straight (0).
+	wantDescents := map[string]int{
+		"switchback":   2,
+		"false_summit": 1,
+		"portal_locks": 1,
 	}
 	files, err := filepath.Glob("../../maps/*.json")
 	if err != nil || len(files) != len(want) {
@@ -361,6 +395,9 @@ func TestShippedMapsGolden(t *testing.T) {
 		}
 		if m.Par != want[id] {
 			t.Errorf("%s: par = %d, want %d", id, m.Par, want[id])
+		}
+		if m.ForcedDescents != wantDescents[id] {
+			t.Errorf("%s: forced descents = %d, want %d", id, m.ForcedDescents, wantDescents[id])
 		}
 		if m.MaxMoves < m.Par {
 			t.Errorf("%s: max_moves %d below par %d", id, m.MaxMoves, m.Par)

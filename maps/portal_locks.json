@@ -1,0 +1,53 @@
+{
+  "id": "portal_locks",
+  "name": "Portal Locks",
+  "description": "Every floor is a scatter of islands and the pipes are the only bridges. The nearest stairs are rarely the right ones.",
+  "difficulty": "hard",
+  "max_moves": 90,
+  "levels": [
+    [
+      "....Uoooo",
+      "........o",
+      "........1",
+      ".........",
+      ".........",
+      ".........",
+      "1........",
+      "o........",
+      "SoooU...."
+    ],
+    [
+      "ooooDU...",
+      "o........",
+      "2.....oo4",
+      "......U..",
+      "..Uo4....",
+      ".........",
+      "......Uoo",
+      "..o.....o",
+      "..ooD...2"
+    ],
+    [
+      ".....Doo.",
+      ".........",
+      "...U.....",
+      "...oooD..",
+      "..D......",
+      "..o......",
+      "ooo...D..",
+      "o.....ooU",
+      "3.....3.."
+    ],
+    [
+      ".....5ooo",
+      ".5......o",
+      ".ooD....o",
+      "........o",
+      ".......Fo",
+      ".........",
+      ".........",
+      "........D",
+      "......ooo"
+    ]
+  ]
+}

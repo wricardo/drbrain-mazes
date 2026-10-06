@@ -178,12 +178,6 @@
 				<g aria-hidden="true" data-testid="hole">
 					<circle cx={cx(h.x)} cy={cy(h.y)} r="13" fill={c.hole} stroke={c.ring} stroke-width="3.5" />
 					<text x={cx(h.x)} y={cy(h.y) + 4.5} text-anchor="middle" font-size="12" font-weight="800" fill={c.ring}>{h.glyph}</text>
-					{#if h.twinElsewhere}
-						<g data-testid="hidden-twin">
-							<rect x={h.x * CELL + CELL - 17} y={h.y * CELL + 1} width="16" height="12" rx="6" fill="#fff" stroke={c.hole} stroke-width="1.5" />
-							<text x={h.x * CELL + CELL - 9} y={h.y * CELL + 10.5} text-anchor="middle" font-size="9" font-weight="700" fill="#1e1b4b">?</text>
-						</g>
-					{/if}
 				</g>
 			{/each}
 

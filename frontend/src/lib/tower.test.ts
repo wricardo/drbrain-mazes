@@ -79,16 +79,16 @@ describe('nextAngle', () => {
 
 describe('portalLinks', () => {
 	const rows = ['1.2.', '..1.', '3...'];
-	it('finds every hole, pipes same-level pairs and flags holes whose twin is out of sight', () => {
+	it('finds every hole and pipes the same-level pairs', () => {
 		const { holes, pipes } = portalLinks(rows, [
 			{ glyph: '1', b: p(0, 2, 1) },
 			{ glyph: '2', b: null },
 			{ glyph: '3', b: null }
 		]);
-		expect(holes.map((h) => `${h.glyph}@${h.x},${h.y}:${h.twinElsewhere}`)).toEqual(['1@0,0:false', '2@2,0:true', '1@2,1:false', '3@0,2:true']);
+		expect(holes.map((h) => `${h.glyph}@${h.x},${h.y}`)).toEqual(['1@0,0', '2@2,0', '1@2,1', '3@0,2']);
 		expect(pipes).toEqual([{ glyph: '1', a: { x: 0, y: 0 }, b: { x: 2, y: 1 } }]);
 	});
-	it('draws no pipe for a hidden twin and ignores non-portal glyphs', () => {
+	it('draws no pipe when a hole has no listed twin and ignores non-portal glyphs', () => {
 		expect(portalLinks(['So.', 'oFo'], [])).toEqual({ holes: [], pipes: [] });
 		expect(portalLinks(['1..'], [{ glyph: '1', b: null }]).pipes).toEqual([]);
 	});

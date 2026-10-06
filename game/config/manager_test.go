@@ -17,7 +17,7 @@ import (
 func cfg(id string) engine.MapConfig {
 	return engine.MapConfig{
 		ID: id, Name: "T",
-		Levels: [][]string{{"SoU.", "...U", "...1"}, {"..D1", "...D", "...F"}},
+		Levels: [][]string{{"SoU.", "....", "...."}, {"..D1", "...1", "...F"}},
 	}
 }
 

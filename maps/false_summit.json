@@ -1,0 +1,64 @@
+{
+  "id": "false_summit",
+  "name": "False Summit",
+  "description": "The stairs by the door climb fast and land right next to the finish. Right next to it is not the same as at it.",
+  "difficulty": "hard",
+  "max_moves": 160,
+  "levels": [
+    [
+      "ooooooooo",
+      "o.......o",
+      "o.......o",
+      "o.......o",
+      "o.......U",
+      "o........",
+      "o........",
+      "o........",
+      "SoU......"
+    ],
+    [
+      "....Uoo..",
+      "......o..",
+      "......ooo",
+      "........o",
+      "........D",
+      ".........",
+      "Uoooo.U.U",
+      "....o.o.o",
+      "..Doo.ooo"
+    ],
+    [
+      "....Doooo",
+      "........o",
+      "....U...o",
+      "....o...o",
+      "ooooo...o",
+      "o.......o",
+      "D.U...D.D",
+      "..o...o..",
+      "..ooooo.."
+    ],
+    [
+      ".oooU....",
+      ".o.......",
+      ".oooD....",
+      ".........",
+      ".........",
+      "........U",
+      "..D.....o",
+      "..o.....o",
+      "..ooooooo"
+    ],
+    [
+      "....Doo..",
+      "......o..",
+      "......o.F",
+      "........o",
+      "........o",
+      "........D",
+      ".........",
+      ".........",
+      "........."
+    ]
+  ]
+}

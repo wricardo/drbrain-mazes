@@ -233,20 +233,16 @@ func TestStairsAndPortalMoves(t *testing.T) {
 	if got.State.Pos != ev.To || got.State.Moves != 2 {
 		t.Fatalf("after stairs: pos %v moves %d", got.State.Pos, got.State.Moves)
 	}
-	got = e.move(t, s.ID, right) // portal 1 -> level 0 (3,2)
-	if got.LastEvent.Via != engine.ViaPortal || got.State.Pos != (engine.Position{Level: 0, X: 3, Y: 2}) {
+	got = e.move(t, s.ID, right) // portal 1 -> level 1 (3,1)
+	if got.LastEvent.Via != engine.ViaPortal || got.State.Pos != (engine.Position{Level: 1, X: 3, Y: 1}) {
 		t.Fatalf("portal: %+v pos %v", got.LastEvent, got.State.Pos)
 	}
-	got = e.move(t, s.ID, up) // stairs at level 0 (3,1): land on the D above, not yet won
-	if got.LastEvent.Via != engine.ViaStairsUp || got.State.Pos != pos(1, 3, 1) || got.State.Status != engine.StatusPlaying {
-		t.Fatalf("second stairs: %+v pos %v", got.LastEvent, got.State.Pos)
-	}
 	got = e.move(t, s.ID, down)
-	if got.State.Status != engine.StatusWon || got.State.Moves != 5 || got.State.Moves != got.Map.Par {
+	if got.State.Status != engine.StatusWon || got.State.Moves != 4 || got.State.Moves != got.Map.Par {
 		t.Fatalf("finish: %s in %d moves (par %d)", got.State.Status, got.State.Moves, got.Map.Par)
 	}
 	want := []engine.Position{
-		pos(0, 0, 0), pos(0, 1, 0), pos(0, 2, 0), pos(1, 2, 0), pos(1, 3, 0), pos(0, 3, 2), pos(0, 3, 1), pos(1, 3, 1), pos(1, 3, 2),
+		pos(0, 0, 0), pos(0, 1, 0), pos(0, 2, 0), pos(1, 2, 0), pos(1, 3, 0), pos(1, 3, 1), pos(1, 3, 2),
 	}
 	if !reflect.DeepEqual(got.State.Path, want) {
 		t.Fatalf("path = %v, want %v", got.State.Path, want)
@@ -260,8 +256,6 @@ func TestInvalidDirectionRejected(t *testing.T) {
 		_, err := e.svc.Move(s.ID, d)
 		wantCode(t, err, service.CodeInvalidArgument)
 		_, err = e.svc.BulkMove(s.ID, []engine.Direction{right, d}, false)
-		wantCode(t, err, service.CodeInvalidArgument)
-		_, err = e.svc.Simulate("corridor", []engine.Direction{d}, false)
 		wantCode(t, err, service.CodeInvalidArgument)
 	}
 	if got := e.get(t, s.ID); got.Seq != s.Seq || got.State.Moves != 0 {
@@ -515,50 +509,6 @@ func TestShutdownPersistsEverythingAndIsIdempotent(t *testing.T) {
 	e.svc.Shutdown()
 	if got := e.get(t, ids[0]); got.State.Moves != 1 {
 		t.Fatalf("Shutdown changed the game: moves %d", got.State.Moves)
-	}
-}
-
-func TestSimulate(t *testing.T) {
-	e := newEnv(t, envOpts{})
-
-	res, err := e.svc.Simulate("corridor", repeat(right, 4), true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Status != engine.StatusWon || res.Moves != 4 || len(res.Events) != 4 || res.Map == nil || res.FinalState.Moves != 4 {
-		t.Fatalf("simulate: %s moves %d events %d", res.Status, res.Moves, len(res.Events))
-	}
-	res, err = e.svc.Simulate("corridor", repeat(right, 4), false)
-	if err != nil || res.Status != engine.StatusWon || res.Moves != 4 || res.Events != nil {
-		t.Fatalf("no-events simulate: %v %+v", err, res)
-	}
-
-	// Blocked attempts are events; moves after the end are ignored.
-	res, err = e.svc.Simulate("corridor", []engine.Direction{up, right, right, right, right, right, left}, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Status != engine.StatusWon || res.Moves != 4 || len(res.Events) != 5 || !res.Events[0].Blocked || res.Events[4].Status != engine.StatusWon {
-		t.Fatalf("blocked/trailing: %s moves %d events %+v", res.Status, res.Moves, res.Events)
-	}
-
-	res, err = e.svc.Simulate("limit", repeat(right, 4), false)
-	if err != nil || res.Status != engine.StatusLost || res.LossReason != engine.LossMoveLimit || res.Moves != 3 {
-		t.Fatalf("limit: %v %+v", err, res)
-	}
-
-	// No moves: READY, and asking for events yields an empty (non-nil) list.
-	res, err = e.svc.Simulate("corridor", nil, true)
-	if err != nil || res.Status != engine.StatusReady || res.Moves != 0 || res.Events == nil || len(res.Events) != 0 {
-		t.Fatalf("empty: %v %+v", err, res)
-	}
-
-	_, err = e.svc.Simulate("nope", repeat(right, 4), false)
-	wantCode(t, err, service.CodeNotFound)
-	_, err = e.svc.Simulate("corridor", repeat(up, service.MaxDirections+1), false)
-	wantCode(t, err, service.CodeInvalidArgument)
-	if e.mgr.Count() != 0 {
-		t.Fatal("Simulate created a session")
 	}
 }
 

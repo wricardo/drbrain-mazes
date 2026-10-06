@@ -68,6 +68,16 @@ type Map {
   maxMoves: Int!
   "Length of the shortest winning route; null if the finish is unreachable."
   parMoves: Int
+  """
+  Fewest stairs any winning route takes (levelCount - 1 + 2 * forcedDescents);
+  null if the finish is unreachable.
+  """
+  minLevelChanges: Int
+  """
+  Fewest down stairs any winning route takes: 0 means you can climb straight up.
+  Null if the finish is unreachable.
+  """
+  forcedDescents: Int
 }
 
 "Full map for the editor (admin only)."
@@ -89,6 +99,8 @@ type AdminMap {
   portals: [Portal!]!
   maxMoves: Int!
   parMoves: Int
+  minLevelChanges: Int
+  forcedDescents: Int
 }
 
 """
@@ -155,14 +167,6 @@ type SessionUpdate {
   event: MoveEvent
 }
 
-type SimulationResult {
-  status: Status!
-  lossReason: LossReason
-  moves: Int!
-  finalState: GameState!
-  events: [MoveEvent!]
-}
-
 type MapValidationIssue {
   message: String!
 }
@@ -173,6 +177,8 @@ type MapValidationResult {
   "Set when the map parses but the finish cannot be reached from the start."
   finishReachable: Boolean!
   parMoves: Int
+  minLevelChanges: Int
+  forcedDescents: Int
 }
 
 input MapInput {
@@ -192,8 +198,6 @@ type Query {
   adminMap(id: ID!): AdminMap
   session(id: ID!): Session
   sessions(sort: SessionSort = RECENT, limit: Int = 50, mapId: ID): [Session!]!
-  "Plays directions from a fresh start without a session. Directions after WON/LOST are ignored."
-  simulate(mapID: ID!, moves: [Direction!]!, includeEvents: Boolean = false): SimulationResult!
 }
 
 type Mutation {

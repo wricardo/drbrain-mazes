@@ -18,3 +18,4 @@ frontend/.svelte-kit/
 
 # reference solutions (private; kept locally for make validate)
 solutions/
+.gqlcli.json

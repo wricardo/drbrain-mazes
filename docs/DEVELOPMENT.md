@@ -22,7 +22,7 @@ These decisions shape everything else. Keep them when changing the game or start
 
 1. **One API for humans and AI.** The browser UI uses the same public GraphQL API an AI agent uses. There are no private endpoints for the UI. If a person can do something, an agent can too.
 2. **The server is the source of truth.** Moves are applied on the server. Clients only display snapshots. Two browsers, or a browser and an agent, can play or watch the same session and always agree.
-3. **Pure rules engine.** All game rules live in one package with no I/O, no clock and no dependencies. It can be tested exhaustively and reused by the validator, the `simulate` query and live sessions.
+3. **Pure rules engine.** All game rules live in one package with no I/O, no clock and no dependencies. It can be tested exhaustively and reused by the validator and live sessions.
 4. **Full snapshots, ordered by sequence number.** Every update carries the whole session state and a `seq` that only goes up. Clients never patch state; they replace it and drop anything older. Dropped or reordered messages can't corrupt the view.
 5. **Files, not a database.** Maps are JSON files in `maps/`; each session is one JSON file in `sessions/`. Writes are atomic (temp file + fsync + rename). One binary plus two folders is the whole deployment.
 6. **Agent-readable by design.** `/llms.txt` explains the rules and every API call for an AI. Each game page can copy a ready-made prompt. Answers are never exposed: reference solutions are not in the API, the prompts or the public repo.
@@ -118,8 +118,8 @@ HTTP /graphql (api) → gqlgen resolver (graph) → GameService (game/service)
 
 - Map ids match `^[a-z0-9_-]{1,64}$` because they are file names. Session ids are 16 lowercase hex characters and are validated before touching disk.
 - Admin operations (`createMap`, `updateMap`, `deleteMap`, `validateMap` and the `adminMap` query) require `X-Admin-Key` equal to `ADMIN_API_KEY`, compared through SHA-256 digests in constant time. `ALLOW_UNAUTHENTICATED_ADMIN=true` is honoured only when no key is set (local development). `adminMap` checks the key before looking the id up, so callers can't probe which maps exist.
-- `max_moves ≤ 10000`. `bulkMove` and `simulate` accept at most `service.MaxDirections` (20000) directions per call, because blocked moves are free and the request body cap alone would not bound the work.
-- Request body capped at 1 MiB; query complexity capped at 1000 with weighted costs (`sessions` by `limit`, extra cost for `simulate` and `includeEvents`). `api/hardening_test.go` keeps a copy of the frontend queries to make sure they stay under the cap.
+- `max_moves ≤ 10000`. `bulkMove` accepts at most `service.MaxDirections` (20000) directions per call, because blocked moves are free and the request body cap alone would not bound the work.
+- Request body capped at 1 MiB; query complexity capped at 1000 with weighted costs (`sessions` by `limit`). `api/hardening_test.go` keeps a copy of the frontend queries to make sure they stay under the cap.
 - WebSocket: 10 s init timeout, frame-size guard (`api/wslimit.go`), origin check against `ALLOWED_ORIGINS`, which also drives CORS on `/graphql`.
 - Map creation is atomic (`MapStore.Create`; a conflict is `INVALID_ARGUMENT`). Never check-then-save.
 
@@ -130,13 +130,14 @@ Moves: `UP`, `RIGHT`, `DOWN`, `LEFT`, one tile each.
 - Coordinates: `x` = column, `y` = row, row 0 is the top, **y grows downward**. Level 0 is the bottom of the tower; `U` goes to level + 1.
 - A move onto void or off the grid is **blocked**: nothing changes and it is **not counted**. Every other move is one counted move.
 - Tiles: `.` void, `o` stone, `S` start, `F` finish, `U` stairs up, `D` stairs down, `1`-`9` portal holes.
-- Stepping onto `U`/`D` moves you at once to the same x,y one level up/down (`via` = `STAIRS_UP`/`STAIRS_DOWN`). Stairs are **paired and two-way**: a `U` at level l (x,y) needs a `D` at level l+1 (x,y) and a `D` needs a `U` one level below (`NewMap` enforces it), so whoever can go up from a tile can go back down from the same x,y. You land on the paired stairs tile. Stepping onto a portal hole moves you to its twin (`via` = `PORTAL`), which may be on another level. Effects never chain: arriving on stairs or on a hole does not trigger it, so step off and back on to use it again. A stairs tile always triggers when stepped on, so it can't be walked across like a corridor; put stairs at dead ends.
+- Stepping onto `U`/`D` moves you at once to the same x,y one level up/down (`via` = `STAIRS_UP`/`STAIRS_DOWN`). Stairs are **paired and two-way**: a `U` at level l (x,y) needs a `D` at level l+1 (x,y) and a `D` needs a `U` one level below (`NewMap` enforces it), so whoever can go up from a tile can go back down from the same x,y. You land on the paired stairs tile. Stepping onto a portal hole moves you to its twin (`via` = `PORTAL`), always on the same level (`NewMap` enforces it). Effects never chain: arriving on stairs or on a hole does not trigger it, so step off and back on to use it again. A stairs tile always triggers when stepped on, so it can't be walked across like a corridor; put stairs at dead ends.
 - `State.Path` lists every tile entered, starting with the start tile. A stairs or portal move adds the tile stepped on and the landing tile.
 - After each counted move: standing on `F` → **WON** (beats the move limit on the same move); otherwise `moves >= max_moves` → **LOST/MOVE_LIMIT**.
 - Status: `READY` (no counted move yet), `PLAYING`, `WON`, `LOST`. Moving after `WON`/`LOST` is `ErrTerminal`.
 - `Map.Par` is the shortest winning route by BFS over positions (every counted move costs 1; the move limit is ignored). `-1` means the finish is unreachable.
+- `Map.ForcedDescents` is the fewest `D` stairs any winning route takes (BFS layered by descents; `-1` if unreachable). `MinLevelChanges()` is derived: every descent needs one extra climb, so it is `levels - 1 + 2*ForcedDescents`. Both are exposed on `Map`, `AdminMap` and `validateMap`, and printed by `make validate`. Every shipped map has 0 forced descents (asserted in `TestShippedMapsGolden`).
 
-Engine rules for code: `State.Move` mutates in place; `Clone()` anything that leaves a lock. `Simulate(m, dirs, false)` allocates no events, so bulk simulation stays cheap.
+Engine rules for code: `State.Move` mutates in place; `Clone()` anything that leaves a lock. `Simulate(m, dirs, false)` allocates no events, so validating reference solutions stays cheap.
 
 ### Sessions
 
@@ -148,11 +149,11 @@ Players only ever see the level they stand on. The server enforces it:
 
 - The service keeps the full map in each session. Only `graph/convert.go` decides what leaves the server.
 - `Session.map` is the public catalog entry: name, size, `levelCount`, `maxMoves`, `parMoves` and `preview` (the rows of level 0, which is where every game starts). It has no other level's layout, no start/finish coordinates and no portals. These fields do not exist on the type, so asking for them is a GraphQL validation error.
-- `Session.view` is the current level: its rows and the portal holes on it. A portal's twin location (`b`) is given only when the twin is on the same level; otherwise it is `null`.
+- `Session.view` is the current level: its rows and the portal holes on it, each with its twin's location (`b`) since both ends of a portal are always on the same level.
 - `NewMap` guarantees start on level 0 and finish on the top level, so `levelCount - 1` is always the goal level and nothing needs hiding there.
 - `adminMap` returns the full layout and is admin-only; the editor uses it.
-- `simulate` plays moves from a fresh start and reports positions, like playing, but does not show layouts.
-- `state.path`, `lastEvent` and simulate events carry positions on levels the player has already visited. That is the player's own history, not hidden information.
+- There is no dry-run query: players learn a map only through real moves in a session (`move`, `bulkMove`, `reset`).
+- `state.path` and `lastEvent` carry positions on levels the player has already visited. That is the player's own history, not hidden information.
 
 `api/fog_test.go` runs a session through every query, mutation and the subscription and asserts no other level's rows ever appear.
 
@@ -169,9 +170,9 @@ Players only ever see the level they stand on. The server enforces it:
 }
 ```
 
-`levels[0]` is the bottom level. All levels have the same size (3–20 per side), 1–12 levels. Glyphs: `.` void, `o` stone, `S` start (exactly one, on level 0), `F` finish (exactly one, on the top level), `U`/`D` stairs (paired: a `U` needs a `D` at the same x,y one level up and a `D` needs a `U` one level down), `1`-`9` portal holes (each digit used appears exactly twice, on any levels). `max_moves` defaults to 500 (max 10000). JSON Schema: `map-schema.json`.
+`levels[0]` is the bottom level. All levels have the same size (3–20 per side), 1–12 levels. Glyphs: `.` void, `o` stone, `S` start (exactly one, on level 0), `F` finish (exactly one, on the top level), `U`/`D` stairs (paired: a `U` needs a `D` at the same x,y one level up and a `D` needs a `U` one level down), `1`-`9` portal holes (each digit used appears exactly twice, on the same level). `max_moves` defaults to 500 (max 10000). JSON Schema: `map-schema.json`.
 
-Shipped maps (13), with their par:
+Shipped maps (16), with their par:
 
 | map | levels | idea | par |
 |---|---|---|---|
@@ -183,11 +184,14 @@ Shipped maps (13), with their par:
 | `lost_garden` | 1 | a 13×13 perfect maze, no tricks | 90 |
 | `wormholes` | 1 | a 13×13 maze with three portal pairs between dead ends | 78 |
 | `four_floors` | 4 | 7×7 corridor mazes, two staircase pairs per gap | 72 |
-| `portal_climb` | 3 | one staircase per gap plus two portal pairs that jump between levels | 80 |
+| `portal_climb` | 3 | one staircase per gap plus two portal pairs | 80 |
 | `tower_maze` | 3 | corridor maze per level; staircases at dead ends, most of them lead somewhere you have already been | 62 |
 | `miners_shaft` | 6 | level 2 (index 1) is an 8×8 board of islands joined only by arrows and pipes; the quick ways up are traps, so both pipes are required; the upper levels are corridors with trap pockets | 71 |
-| `deep_tower` | 5 | five 9×9 corridor mazes, two staircase pairs per gap, two portal pairs | 94 |
-| `grand_tower` | 6 | six 9×9 corridor mazes, two staircase pairs per gap, three portal pairs | 114 |
+| `deep_tower` | 5 | five 9×9 corridor mazes, two staircase pairs per gap, two portal pairs | 93 |
+| `grand_tower` | 6 | six 9×9 corridor mazes, two staircase pairs per gap, three portal pairs | 112 |
+| `switchback` | 4 | 7×7 floors split into islands; two forced descents (7 level changes), a decoy up stair on every floor | 34 |
+| `false_summit` | 5 | stairs by the start chain straight up to a pocket beside the visible finish; the real route circles level 0 and drops once | 66 |
+| `portal_locks` | 4 | every floor is islands joined only by portals; the nearest stairs are decoys; one forced descent | 46 |
 
 ### Designing a good map
 
@@ -213,7 +217,7 @@ Maps can also be created in `/editor` or with the admin mutations; both need the
 
 The schema lives in `graph/schema.graphqls`.
 
-- **Queries:** `maps`, `map(id)`, `adminMap(id)` (admin), `session(id)`, `sessions(sort, limit, mapId)`, `simulate(mapID, moves, includeEvents)`. `simulate` plays moves from a fresh start without a session, so agents can test an idea.
+- **Queries:** `maps`, `map(id)`, `adminMap(id)` (admin), `session(id)`, `sessions(sort, limit, mapId)`. There is deliberately no `simulate`/dry-run query: agents test ideas with real moves and `reset`.
 - **Mutations:** `createSession`, `renameSession`, `deleteSession`, `move`, `bulkMove`, `reset`, plus the admin map mutations.
 - **Subscription:** `sessionUpdated(sessionID)` emits the current snapshot, then every change.
 
@@ -352,7 +356,7 @@ scripts/smoke.sh 9191                            # end-to-end HTTP smoke (starts
 
 A checklist for the next game in the collection, based on what worked here:
 
-1. **Write the rules as a pure engine first.** State in, step, state out. No I/O, no time. Add `Simulate` (run to the end) early; the validator, the `simulate` query and the tests all use it.
+1. **Write the rules as a pure engine first.** State in, step, state out. No I/O, no time. Add `Simulate` (run to the end) early; the validator and the tests use it.
 2. **Pin the rules with golden tests** before building anything else: known move lists and their exact lengths and outcomes.
 3. **Define the data as files with a JSON Schema** (maps, puzzles, levels). Validate on load and in CI. Keep reference solutions private and check them with a CLI.
 4. **Put one service facade in front of the engine.** It owns sessions and locking. Storage and broadcasting are interfaces it defines.

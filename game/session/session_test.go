@@ -24,13 +24,13 @@ const (
 	idC = "00112233445566cc"
 )
 
-// towerCfg: two levels, paired stairs and a portal pair across levels.
-// RIGHT, RIGHT (stairs), RIGHT (portal), UP (stairs), DOWN wins in 5 moves.
+// towerCfg: two levels, paired stairs and a portal pair on level 1.
+// RIGHT, RIGHT (stairs), RIGHT (portal), DOWN wins in 4 moves.
 var towerCfg = engine.MapConfig{
 	ID: "tower", Name: "Tower", MaxMoves: 6,
 	Levels: [][]string{
-		{"SoU.", "...U", "...1"},
-		{"..D1", "...D", "...F"},
+		{"SoU.", "....", "...."},
+		{"..D1", "...1", "...F"},
 	},
 }
 

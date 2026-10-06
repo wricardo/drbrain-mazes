@@ -30,15 +30,14 @@ var (
 	bypassCfg = engine.MapConfig{
 		ID: "bypass", Name: "Bypass", Levels: [][]string{{"Sooo", "o..o", "ooFo"}}, MaxMoves: 6,
 	}
-	// towerCfg: two levels with paired stairs and a portal pair across levels.
+	// towerCfg: two levels with paired stairs and a portal pair on level 1.
 	// RIGHT, RIGHT (stairs up, landing on the D at level 1 (2,0)), RIGHT (portal
-	// 1 -> level 0 (3,2)), UP (stairs up, landing on the D at level 1 (3,1)),
-	// DOWN steps onto F: par 5.
+	// 1 -> level 1 (3,1)), DOWN steps onto F: par 4.
 	towerCfg = engine.MapConfig{
 		ID: "tower", Name: "Tower", MaxMoves: 50,
 		Levels: [][]string{
-			{"SoU.", "...U", "...1"},
-			{"..D1", "...D", "...F"},
+			{"SoU.", "....", "...."},
+			{"..D1", "...1", "...F"},
 		},
 	}
 	// longCfg: 20x3, 19 RIGHT moves win (more updates than a subscriber buffer holds).

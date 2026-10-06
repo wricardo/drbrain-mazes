@@ -56,16 +56,6 @@ func (s *Session) Clone() *Session {
 	return c
 }
 
-// SimulationResult is the outcome of an instant simulation.
-type SimulationResult struct {
-	Status     engine.Status
-	LossReason engine.LossReason
-	Moves      int
-	FinalState engine.State
-	Map        *engine.Map
-	Events     []engine.MoveEvent // only when requested
-}
-
 // SessionFilter narrows ListSessions.
 type SessionFilter struct {
 	MapID string
@@ -93,8 +83,6 @@ type GameService interface {
 	BulkMove(id string, dirs []engine.Direction, stopOnBlocked bool) (*Session, error)
 	// Reset puts the game back to the start, keeping Attempts and BestMoves.
 	Reset(id string) (*Session, error)
-	// Simulate plays dirs from a fresh start without a session.
-	Simulate(mapID string, dirs []engine.Direction, includeEvents bool) (*SimulationResult, error)
 
 	ListMaps() []*engine.Map
 	GetMap(id string) (*engine.Map, error)

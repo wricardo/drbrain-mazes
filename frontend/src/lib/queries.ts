@@ -28,6 +28,8 @@ const MAP_FIELDS = `
   preview
   maxMoves
   parMoves
+  minLevelChanges
+  forcedDescents
 `;
 
 /** Full layout, admin only (editor). */
@@ -45,6 +47,8 @@ const ADMIN_MAP_FIELDS = `
   portals { ${PORTAL_FIELDS} }
   maxMoves
   parMoves
+  minLevelChanges
+  forcedDescents
 `;
 
 /** Full session snapshot: everything the board, tower and counters need. */
@@ -103,16 +107,6 @@ export const SESSIONS_QUERY = `
       lastActionAt
       map { name parMoves }
       state { status moves }
-    }
-  }
-`;
-
-export const SIMULATE_QUERY = `
-  query Simulate($mapID: ID!, $moves: [Direction!]!, $includeEvents: Boolean) {
-    simulate(mapID: $mapID, moves: $moves, includeEvents: $includeEvents) {
-      status
-      lossReason
-      moves
     }
   }
 `;
@@ -188,6 +182,8 @@ export const VALIDATE_MAP_MUTATION = `
       issues { message }
       finishReachable
       parMoves
+      minLevelChanges
+      forcedDescents
     }
   }
 `;

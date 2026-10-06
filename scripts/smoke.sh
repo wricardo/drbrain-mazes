@@ -33,15 +33,10 @@ SOLUTION=solutions/first_steps.json
 [ -f "${SOLUTION}" ] || fail "${SOLUTION} missing (reference solutions are local-only)"
 FIRST=$(jq -er '.moves[0]' "${SOLUTION}")
 REST=$(jq -er '.moves[1:] | join(",")' "${SOLUTION}")
-ALL=$(jq -er '.moves | join(",")' "${SOLUTION}")
 N=$(jq -er '.moves | length' "${SOLUTION}")
 
 echo "maps:"; gql '{ maps { id parMoves } }' | tee /dev/stderr | jq -e '.data.maps | length > 0' >/dev/null || fail "no maps"
 echo
-
-SIM=$(gql "query { simulate(mapID:\"first_steps\", moves:[${ALL}]) { status moves } }")
-echo "simulate: ${SIM}"
-echo "${SIM}" | jq -e '.data.simulate.status == "WON"' >/dev/null || fail "simulate not WON"
 
 R=$(gql 'mutation { createSession(mapID:"first_steps") { id view { level levelCount rows } map { levelCount preview } } }')
 SID=$(echo "${R}" | jq -er '.data.createSession.id') || fail "createSession"

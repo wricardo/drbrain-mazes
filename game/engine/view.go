@@ -1,7 +1,8 @@
 package engine
 
-// PortalView is a portal hole as seen from one level. A is on the viewed
-// level; B is set only when the twin is on the same level too.
+// PortalView is a portal hole as seen from one level. A portal's two holes
+// are always on the same level, so both A and B are set whenever the portal
+// is visible at all.
 type PortalView struct {
 	Glyph string
 	A     Position
@@ -9,8 +10,8 @@ type PortalView struct {
 }
 
 // LevelView is everything a player standing on one level may see. The server
-// never exposes more than this to players (fog): other levels' layouts and the
-// location of a portal's twin on another level stay hidden.
+// never exposes more than this to players (fog): other levels' layouts stay
+// hidden.
 type LevelView struct {
 	Level      int
 	LevelCount int
@@ -27,15 +28,11 @@ func (m *Map) View(l int) LevelView {
 	}
 	v.Rows = append(v.Rows, m.Levels[l]...)
 	for _, p := range m.Portals {
-		switch {
-		case p.A.Level == l && p.B.Level == l:
-			b := p.B
-			v.Portals = append(v.Portals, PortalView{Glyph: p.Glyph, A: p.A, B: &b})
-		case p.A.Level == l:
-			v.Portals = append(v.Portals, PortalView{Glyph: p.Glyph, A: p.A})
-		case p.B.Level == l:
-			v.Portals = append(v.Portals, PortalView{Glyph: p.Glyph, A: p.B})
+		if p.A.Level != l {
+			continue
 		}
+		b := p.B
+		v.Portals = append(v.Portals, PortalView{Glyph: p.Glyph, A: p.A, B: &b})
 	}
 	return v
 }

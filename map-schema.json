@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/wricardo/drbrain-mazes/map-schema.json",
   "title": "drbrain-mazes map",
-  "description": "Map file (maps/<id>.json). A tower of levels; levels[0] is the bottom. Coordinates: x = column, y = row, row 0 is the top of a level (y grows downward); all levels have the same size. Glyphs: '.' void (not walkable), 'o' stone, 'S' start (exactly one, on level 0), 'F' finish (exactly one, on the top level), 'U' stairs up, 'D' stairs down, '1'-'9' portal holes (each digit used appears exactly twice; stepping on one teleports to the other). Stairs are paired: a 'U' at level l (x,y) needs a 'D' at level l+1 (x,y), and a 'D' needs a 'U' at the same x,y one level down; you land on the paired tile, and arriving does not trigger it.",
+  "description": "Map file (maps/<id>.json). A tower of levels; levels[0] is the bottom. Coordinates: x = column, y = row, row 0 is the top of a level (y grows downward); all levels have the same size. Glyphs: '.' void (not walkable), 'o' stone, 'S' start (exactly one, on level 0), 'F' finish (exactly one, on the top level), 'U' stairs up, 'D' stairs down, '1'-'9' portal holes (each digit used appears exactly twice on the same level; stepping on one teleports to the other). Stairs are paired: a 'U' at level l (x,y) needs a 'D' at level l+1 (x,y), and a 'D' needs a 'U' at the same x,y one level down; you land on the paired tile, and arriving does not trigger it.",
   "type": "object",
   "required": ["id", "name", "levels"],
   "additionalProperties": false,

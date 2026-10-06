@@ -21,12 +21,14 @@ type AdminMap struct {
 	LevelCount  int    `json:"levelCount"`
 	// Layout glyphs per level (index 0 = bottom), each a list of rows.
 	// . void, o stone, S start, F finish, U stairs up, D stairs down, 1-9 portal holes.
-	Levels   [][]string `json:"levels"`
-	Start    *Position  `json:"start"`
-	Finish   *Position  `json:"finish"`
-	Portals  []*Portal  `json:"portals"`
-	MaxMoves int        `json:"maxMoves"`
-	ParMoves *int       `json:"parMoves,omitempty"`
+	Levels          [][]string `json:"levels"`
+	Start           *Position  `json:"start"`
+	Finish          *Position  `json:"finish"`
+	Portals         []*Portal  `json:"portals"`
+	MaxMoves        int        `json:"maxMoves"`
+	ParMoves        *int       `json:"parMoves,omitempty"`
+	MinLevelChanges *int       `json:"minLevelChanges,omitempty"`
+	ForcedDescents  *int       `json:"forcedDescents,omitempty"`
 }
 
 type GameState struct {
@@ -65,6 +67,12 @@ type Map struct {
 	MaxMoves int      `json:"maxMoves"`
 	// Length of the shortest winning route; null if the finish is unreachable.
 	ParMoves *int `json:"parMoves,omitempty"`
+	// Fewest stairs any winning route takes (levelCount - 1 + 2 * forcedDescents);
+	// null if the finish is unreachable.
+	MinLevelChanges *int `json:"minLevelChanges,omitempty"`
+	// Fewest down stairs any winning route takes: 0 means you can climb straight up.
+	// Null if the finish is unreachable.
+	ForcedDescents *int `json:"forcedDescents,omitempty"`
 }
 
 type MapInput struct {
@@ -86,6 +94,8 @@ type MapValidationResult struct {
 	// Set when the map parses but the finish cannot be reached from the start.
 	FinishReachable bool `json:"finishReachable"`
 	ParMoves        *int `json:"parMoves,omitempty"`
+	MinLevelChanges *int `json:"minLevelChanges,omitempty"`
+	ForcedDescents  *int `json:"forcedDescents,omitempty"`
 }
 
 type MoveEvent struct {
@@ -149,14 +159,6 @@ type SessionUpdate struct {
 	Seq     int        `json:"seq"`
 	Session *Session   `json:"session"`
 	Event   *MoveEvent `json:"event,omitempty"`
-}
-
-type SimulationResult struct {
-	Status     Status       `json:"status"`
-	LossReason *LossReason  `json:"lossReason,omitempty"`
-	Moves      int          `json:"moves"`
-	FinalState *GameState   `json:"finalState"`
-	Events     []*MoveEvent `json:"events,omitempty"`
 }
 
 type Subscription struct {

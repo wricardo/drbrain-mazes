@@ -130,6 +130,60 @@ func (m *Map) Shortest() (path []Direction, ok bool) {
 	return nil, false
 }
 
+// MinLevelChanges is the fewest stairs any winning route takes, or -1 if the
+// finish is unreachable.
+func (m *Map) MinLevelChanges() int {
+	if m.ForcedDescents < 0 {
+		return -1
+	}
+	return m.LevelCount() - 1 + 2*m.ForcedDescents
+}
+
+// fewestDescents is a layered BFS where only D stairs cost 1: layer k holds
+// every position reachable with exactly k descents and no fewer. It returns -1
+// if the finish is unreachable.
+func (m *Map) fewestDescents() int {
+	idx := func(p Position) int { return (p.Level*m.Height+p.Y)*m.Width + p.X }
+	seen := make([]bool, len(m.tiles))
+	seen[idx(m.Start)] = true
+	layer := []Position{m.Start}
+	for k := 0; len(layer) > 0; k++ {
+		var next []Position
+		for i := 0; i < len(layer); i++ {
+			p := layer[i]
+			if p == m.Finish {
+				return k
+			}
+			for d := Direction(0); d < 4; d++ {
+				q, walk := m.target(p, d)
+				if !walk {
+					continue
+				}
+				to, via := m.resolve(q)
+				if seen[idx(to)] {
+					continue
+				}
+				if via == ViaStairsDown {
+					next = append(next, to)
+					continue
+				}
+				seen[idx(to)] = true
+				layer = append(layer, to)
+			}
+		}
+		// A position first found across a descent may have been reached for
+		// free later in the same layer; only the rest open the next layer.
+		layer = layer[:0]
+		for _, p := range next {
+			if !seen[idx(p)] {
+				seen[idx(p)] = true
+				layer = append(layer, p)
+			}
+		}
+	}
+	return -1
+}
+
 // Reachable returns every position a player can stand on, starting from the
 // start tile.
 func (m *Map) Reachable() []Position {

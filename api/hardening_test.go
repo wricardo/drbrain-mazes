@@ -55,14 +55,13 @@ func TestCreateMapMaxMovesOverHTTP(t *testing.T) {
 // frontend adds heavier queries.
 const (
 	posSel     = `level x y`
-	mapSel     = `id name description difficulty width height levelCount preview maxMoves parMoves`
-	adminSel   = `id name description difficulty width height levelCount levels start { ` + posSel + ` } finish { ` + posSel + ` } portals { glyph a { ` + posSel + ` } b { ` + posSel + ` } } maxMoves parMoves`
+	mapSel     = `id name description difficulty width height levelCount preview maxMoves parMoves minLevelChanges forcedDescents`
+	adminSel   = `id name description difficulty width height levelCount levels start { ` + posSel + ` } finish { ` + posSel + ` } portals { glyph a { ` + posSel + ` } b { ` + posSel + ` } } maxMoves parMoves minLevelChanges forcedDescents`
 	viewSel    = `level levelCount rows portals { glyph a { ` + posSel + ` } b { ` + posSel + ` } }`
 	stateSel   = `pos { ` + posSel + ` } moves status lossReason path { ` + posSel + ` }`
 	eventSel   = `move direction from { ` + posSel + ` } stepped { ` + posSel + ` } to { ` + posSel + ` } blocked via status lossReason`
 	sessionSel = `id displayName mapId map { ` + mapSel + ` } view { ` + viewSel + ` } state { ` + stateSel + ` } seq createdAt lastActionAt attempts bestMoves lastEvent { ` + eventSel + ` }`
 	sessionsQ  = `query Sessions($limit: Int, $sort: SessionSort, $mapId: ID) { sessions(sort: $sort, limit: $limit, mapId: $mapId) { id displayName mapId createdAt lastActionAt attempts bestMoves map { name levelCount parMoves } state { status moves } } }`
-	simulateQ  = `query Simulate($mapID: ID!, $moves: [Direction!]!, $includeEvents: Boolean) { simulate(mapID: $mapID, moves: $moves, includeEvents: $includeEvents) { status lossReason moves } }`
 )
 
 func queryComplexity(t *testing.T, query string, vars map[string]any) int {
@@ -76,7 +75,6 @@ func queryComplexity(t *testing.T, query string, vars map[string]any) int {
 }
 
 func TestFrontendQueriesStayUnderComplexityLimit(t *testing.T) {
-	moves := []any{"UP", "RIGHT"}
 	cases := []struct {
 		name  string
 		query string
@@ -88,7 +86,6 @@ func TestFrontendQueriesStayUnderComplexityLimit(t *testing.T) {
 		{"sessions page (limit 500)", sessionsQ, map[string]any{"limit": json.Number("500")}},
 		{"sessions home (limit 12)", sessionsQ, map[string]any{"limit": json.Number("12")}},
 		{"sessions default limit", sessionsQ, nil},
-		{"simulate", simulateQ, map[string]any{"mapID": "m", "moves": moves}},
 		{"move with full session", `mutation($sessionID: ID!) { move(sessionID: $sessionID, direction: UP) { ` + sessionSel + ` } }`, map[string]any{"sessionID": "x"}},
 		{"bulkMove with full session", `mutation($sessionID: ID!) { bulkMove(sessionID: $sessionID, directions: [UP, DOWN]) { ` + sessionSel + ` } }`, map[string]any{"sessionID": "x"}},
 		{"subscription", `subscription($sessionID: ID!) { sessionUpdated(sessionID: $sessionID) { seq session { ` + sessionSel + ` } event { ` + eventSel + ` } } }`, map[string]any{"sessionID": "x"}},
@@ -102,17 +99,22 @@ func TestFrontendQueriesStayUnderComplexityLimit(t *testing.T) {
 	}
 }
 
-func TestComplexityScalesWithLimitAndEvents(t *testing.T) {
+func TestComplexityScalesWithLimit(t *testing.T) {
 	sessions := func(limit string) int {
 		return queryComplexity(t, `{ sessions(limit: `+limit+`) { id map { name } state { status } } }`, nil)
 	}
 	if small, big := sessions("10"), sessions("500"); big <= small*10 {
 		t.Fatalf("sessions cost does not grow with limit: limit 10 = %d, limit 500 = %d", small, big)
 	}
-	plain := queryComplexity(t, `{ simulate(mapID: "m", moves: [UP]) { moves } }`, nil)
-	events := queryComplexity(t, `{ simulate(mapID: "m", moves: [UP], includeEvents: true) { moves } }`, nil)
-	if events < plain+simulateEventsCost {
-		t.Fatalf("includeEvents not weighted: plain %d, events %d", plain, events)
+}
+
+// Players learn a map only through real moves in a session; there is no
+// dry-run query.
+func TestNoSimulateQuery(t *testing.T) {
+	ts := newTestServer(t, Options{})
+	_, out := gql(t, ts.URL, `{ simulate(mapID: "m1", moves: [UP]) { moves } }`, nil)
+	if got := firstErrCode(out); got != "GRAPHQL_VALIDATION_FAILED" {
+		t.Fatalf("simulate should not exist: code=%q out=%v", got, out)
 	}
 }
 
@@ -129,8 +131,7 @@ func TestAliasedAbuseIsRejected(t *testing.T) {
 	}
 	cases := map[string]string{
 		"sessions at max limit": alias(3, `sessions(limit: 500) { id map { name } state { status moves path { level x y } } }`),
-		"simulate with events":  alias(5, `simulate(mapID: "m1", moves: [UP], includeEvents: true) { moves }`),
-		"simulate plain":        alias(150, `simulate(mapID: "m1", moves: [UP]) { moves }`),
+		"many aliased maps":     alias(400, `maps { id name }`),
 	}
 	for name, q := range cases {
 		t.Run(name, func(t *testing.T) {

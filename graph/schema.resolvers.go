@@ -118,7 +118,9 @@ func (r *mutationResolver) ValidateMap(ctx context.Context, mapArg model.MapInpu
 		Valid:           res.Valid,
 		Issues:          make([]*model.MapValidationIssue, len(res.Issues)),
 		FinishReachable: res.FinishReachable,
-		ParMoves:        toParMoves(res.ParMoves),
+		ParMoves:        nullIfNegative(res.ParMoves),
+		MinLevelChanges: nullIfNegative(res.MinLevelChanges),
+		ForcedDescents:  nullIfNegative(res.ForcedDescents),
 	}
 	for i, msg := range res.Issues {
 		out.Issues[i] = &model.MapValidationIssue{Message: msg}
@@ -191,16 +193,6 @@ func (r *queryResolver) Sessions(ctx context.Context, sort *model.SessionSort, l
 		out[i] = toSession(s)
 	}
 	return out, nil
-}
-
-// Simulate is the resolver for the simulate field.
-func (r *queryResolver) Simulate(ctx context.Context, mapID string, moves []model.Direction, includeEvents *bool) (*model.SimulationResult, error) {
-	events := includeEvents != nil && *includeEvents
-	res, err := r.Service.Simulate(mapID, fromDirections(moves), events)
-	if err != nil {
-		return nil, toGQLError(err)
-	}
-	return toSimulationResult(res), nil
 }
 
 // SessionUpdated is the resolver for the sessionUpdated field. It subscribes

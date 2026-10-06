@@ -21,8 +21,8 @@ const (
 	DefaultListLimit = 50
 	MaxListLimit     = 500
 
-	// MaxDirections bounds the directions accepted by one BulkMove or
-	// Simulate call. Blocked attempts are free, so without a cap a request
+	// MaxDirections bounds the directions accepted by one BulkMove
+	// call. Blocked attempts are free, so without a cap a request
 	// could ask for an unbounded amount of work and events.
 	MaxDirections = 20000
 )
@@ -374,31 +374,6 @@ func (svc *gameService) Reset(id string) (*Session, error) {
 	svc.persist(s)
 	svc.broadcast(snap)
 	return snap, nil
-}
-
-// Simulate plays dirs on map mapID from a fresh start, without a session.
-// Directions after the game ends are ignored.
-func (svc *gameService) Simulate(mapID string, dirs []engine.Direction, includeEvents bool) (*SimulationResult, error) {
-	if len(dirs) > MaxDirections {
-		return nil, Errorf(CodeInvalidArgument, "too many directions (%d, max %d)", len(dirs), MaxDirections)
-	}
-	for _, d := range dirs {
-		if !validDirection(d) {
-			return nil, Errorf(CodeInvalidArgument, "invalid direction %d", int(d))
-		}
-	}
-	m, err := svc.maps.Get(mapID)
-	if err != nil {
-		return nil, err
-	}
-	evs, final := engine.Simulate(m, dirs, includeEvents)
-	if includeEvents && evs == nil {
-		evs = []engine.MoveEvent{}
-	}
-	return &SimulationResult{
-		Status: final.Status, LossReason: final.LossReason, Moves: final.Moves,
-		FinalState: final, Map: m, Events: evs,
-	}, nil
 }
 
 // ---- maps ------------------------------------------------------------------
