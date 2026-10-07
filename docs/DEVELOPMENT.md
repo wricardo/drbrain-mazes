@@ -262,7 +262,7 @@ The goal: friendly, bright and calm, like a puzzle book. Readable for kids and a
 
 - An SVG scaling to the width available, so it stays sharp at any size. Pale indigo checkerboard; void cells are empty.
 - **Stone tiles:** rounded slate squares. **Start** and **finish** are marked (the finish is the cookie).
-- **Stairs:** a blue up arrow (▲) or rose down arrow (▼) stamped on the tile. **Portals:** coloured rings, one colour per digit (1 blue, 2 yellow, 3 orange, 4 green, 5 pink, 6 purple, 7 red, 8 cyan, 9 white) with the digit as text. A dotted pipe joins a pair when both ends are on the level; a `?` badge marks a hole whose twin is out of sight.
+- **Stairs:** a blue up arrow (▲) or rose down arrow (▼) stamped on the tile. **Portals:** coloured rings, one colour per digit (1 blue, 2 yellow, 3 orange, 4 green, 5 pink, 6 purple, 7 red, 8 cyan, 9 white) with the digit as text. A dotted pipe joins each pair, since both ends are always on the same level.
 - **Player:** an indigo arrowhead that glides (120 ms ease-out) and turns toward its last move.
 - **Trail:** small translucent indigo dots on visited tiles.
 - **Bump:** when the last move was blocked, a rose outline flashes on the player's tile.
@@ -270,7 +270,7 @@ The goal: friendly, bright and calm, like a puzzle book. Readable for kids and a
 
 ### The tower diagram
 
-A white card of stacked ledges, one per level, with **FINISH** at the top and **START** at the bottom and a star on the player's level. Only levels the player has seen are buttons (read-only peek, labelled "remembered"); unexplored ledges are dashed and show `?`.
+A white card of stacked ledges, one per level, with **FINISH** at the top and **START** at the bottom and a "You are here" marker on the player's level. Only levels the player has seen are buttons (read-only peek, labelled "remembered"); unexplored ledges are dashed and show `?`.
 
 ### Controls and feedback
 

@@ -3,7 +3,7 @@
 /validate-bin
 
 # runtime state
-sessions/
+/sessions/
 .env
 
 # frontend

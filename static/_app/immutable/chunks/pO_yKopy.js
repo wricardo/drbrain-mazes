@@ -1,1 +1,0 @@
-import{ot as e,rt as t}from"./B_GccA4l.js";import"./DAbXRMz0.js";var n=`$$_urql`,r=()=>t(n),i=t=>{e(n,t)};export{i as n,r as t};

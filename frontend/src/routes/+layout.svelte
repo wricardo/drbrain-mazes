@@ -11,16 +11,39 @@
 
 	const navItems = [
 		{ href: '/', label: 'Play' },
-		{ href: '/learn', label: 'How it works' },
-		{ href: '/sessions', label: 'Sessions' },
 		{ href: '/maps', label: 'Maps' },
+		{ href: '/sessions', label: 'Sessions' },
+		{ href: '/learn', label: 'How it works' },
 		{ href: '/editor', label: 'Editor' }
 	];
 
+	/** Home and /play/* are "Play"; watching one or many sessions belongs to "Sessions". */
 	function isActive(href: string, pathname: string): boolean {
-		if (href === '/') return pathname === '/' || pathname.startsWith('/play/') || pathname.startsWith('/watch/');
+		if (href === '/') return pathname === '/' || pathname.startsWith('/play/');
+		if (href === '/sessions' && (pathname.startsWith('/watch/') || pathname === '/multi' || pathname.startsWith('/multi/'))) return true;
 		return pathname === href || pathname.startsWith(`${href}/`);
 	}
+
+	const footer: { title: string; links: { href: string; label: string; external?: boolean }[] }[] = [
+		{
+			title: 'Play',
+			links: [
+				{ href: '/', label: 'Home' },
+				{ href: '/maps', label: 'Maps' },
+				{ href: '/sessions', label: 'Sessions' },
+				{ href: '/editor', label: 'Editor' }
+			]
+		},
+		{
+			title: 'Docs',
+			links: [
+				{ href: '/learn', label: 'How it works' },
+				{ href: '/llms.txt', label: '/llms.txt', external: true },
+				{ href: '/graphql', label: 'GraphQL endpoint', external: true }
+			]
+		},
+		{ title: 'Tools', links: [{ href: '/playground', label: 'GraphQL Playground', external: true }] }
+	];
 
 	// ssr=false so this always runs in the browser; safe to set the client synchronously.
 	if (browser) {
@@ -60,13 +83,35 @@
 	</header>
 
 	<main id="main" class="flex-1">
-		{@render children()}
+		<!-- Keyed on the path so /play/a -> /play/b (e.g. "Next map") mounts a fresh page for the new session. -->
+		{#key $page.url.pathname}
+			{@render children()}
+		{/key}
 	</main>
 
-	<footer class="border-t border-indigo-200 bg-white px-6 py-4 text-xs text-slate-600 flex flex-wrap gap-4">
-		<span>Find the way through the tower to the finish.</span>
-		<a href="/learn" class="underline">Rules</a>
-		<a href="/llms.txt" target="_blank" rel="noreferrer" class="underline">/llms.txt</a>
-		<a href="/graphql" target="_blank" rel="noreferrer" class="underline">GraphQL endpoint</a>
+	<footer class="border-t border-indigo-200 bg-white">
+		<div class="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 py-8 text-sm sm:grid-cols-2 lg:grid-cols-4">
+			<div>
+				<p class="flex items-center gap-2 font-semibold text-indigo-950"><img src={favicon} alt="" class="h-5 w-5" /> {TITLE}</p>
+				<p class="mt-2 text-xs leading-relaxed text-slate-600">Find the way through the tower to the finish.</p>
+			</div>
+			{#each footer as col (col.title)}
+				<nav aria-label="Footer: {col.title}">
+					<p class="text-xs font-semibold uppercase tracking-widest text-indigo-900">{col.title}</p>
+					<ul class="mt-2 space-y-1.5">
+						{#each col.links as l (l.href)}
+							<li>
+								<a
+									href={l.href}
+									target={l.external ? '_blank' : undefined}
+									rel={l.external ? 'noreferrer' : undefined}
+									class="text-slate-600 hover:text-indigo-800 hover:underline">{l.label}</a
+								>
+							</li>
+						{/each}
+					</ul>
+				</nav>
+			{/each}
+		</div>
 	</footer>
 </div>

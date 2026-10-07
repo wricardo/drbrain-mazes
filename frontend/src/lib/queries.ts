@@ -105,7 +105,7 @@ export const SESSIONS_QUERY = `
       mapId
       createdAt
       lastActionAt
-      map { name parMoves }
+      map { name parMoves maxMoves }
       state { status moves }
     }
   }

@@ -120,7 +120,7 @@ export interface SessionSummary {
 	mapId: string;
 	createdAt: string;
 	lastActionAt: string;
-	map: { name: string; parMoves: number | null };
+	map: { name: string; parMoves: number | null; maxMoves: number };
 	state: { status: Status; moves: number };
 }
 

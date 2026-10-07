@@ -16,7 +16,7 @@ You only ever see **the level you are standing on**. The other levels stay dark 
 | Void (black) | Blocked. Walking into it, or off the edge, does nothing and **costs no move**. |
 | Blue **up arrow** | Stepping on it lifts you one level, onto the matching red arrow at the same x,y spot. Step off and back on to use it again. |
 | Red **down arrow** | Stepping on it drops you one level, onto the matching blue arrow at the same x,y spot. Whenever you can climb, you can come back down from the same spot. |
-| Glowing **hole** (digits 1-9) | Stepping on it sends you through the pipe to the hole with the same number, which can be on a different level. You can step off and on again to go back. |
+| Glowing **hole** (digits 1-9) | Stepping on it sends you through the pipe to the hole with the same number, always on the same level. Only stairs change level. You can step off and on again to go back. |
 | **START** | Always on the bottom level. |
 | **FINISH** | Always on the top level. Reaching it wins. |
 

@@ -61,7 +61,7 @@ const (
 	stateSel   = `pos { ` + posSel + ` } moves status lossReason path { ` + posSel + ` }`
 	eventSel   = `move direction from { ` + posSel + ` } stepped { ` + posSel + ` } to { ` + posSel + ` } blocked via status lossReason`
 	sessionSel = `id displayName mapId map { ` + mapSel + ` } view { ` + viewSel + ` } state { ` + stateSel + ` } seq createdAt lastActionAt attempts bestMoves lastEvent { ` + eventSel + ` }`
-	sessionsQ  = `query Sessions($limit: Int, $sort: SessionSort, $mapId: ID) { sessions(sort: $sort, limit: $limit, mapId: $mapId) { id displayName mapId createdAt lastActionAt attempts bestMoves map { name levelCount parMoves } state { status moves } } }`
+	sessionsQ  = `query Sessions($limit: Int, $sort: SessionSort, $mapId: ID) { sessions(sort: $sort, limit: $limit, mapId: $mapId) { id displayName mapId createdAt lastActionAt attempts bestMoves map { name levelCount parMoves maxMoves } state { status moves } } }`
 )
 
 func queryComplexity(t *testing.T, query string, vars map[string]any) int {

@@ -5,11 +5,12 @@ import Tower from './Tower.svelte';
 afterEach(cleanup);
 
 describe('Tower', () => {
-	it('lists levels top first: FINISH on top, START at the bottom, a star on the miner level', () => {
+	it('lists levels top first: FINISH on top, START at the bottom, a "you are here" marker on the miner level', () => {
 		render(Tower, { levelCount: 3, current: 1 });
 		const names = screen.getAllByTestId(/^tower-level-/).map((el) => el.getAttribute('aria-label'));
 		expect(names).toEqual(['Level 3, finish', 'Level 2, miner is here', 'Level 1, start']);
-		expect(screen.getAllByTestId('tower-star')).toHaveLength(1);
+		expect(screen.getAllByTestId('tower-here')).toHaveLength(1);
+		expect(screen.getByTestId('tower-here').textContent).toContain('You are here');
 		expect(screen.getByText('Finish')).toBeTruthy();
 		expect(screen.getByText('Start')).toBeTruthy();
 	});

@@ -4,16 +4,16 @@
 	import Cookie from '$lib/components/Cookie.svelte';
 	import { PORTAL_COLORS } from '$lib/tower';
 	import { buildGenericPrompt } from '$lib/prompt';
+	import { SHORTCUTS } from '$lib/shortcuts';
 
 	const origin = typeof window !== 'undefined' ? window.location.origin : '';
 	const genericPrompt = $derived(buildGenericPrompt(origin));
 
 	const toc: [string, string][] = [
 		['#game', 'The game'],
-		['#fog-h', 'Fog'],
-		['#tiles-h', 'Tiles'],
-		['#moves-h', 'Moves & limits'],
-		['#keys-h', 'Controls'],
+		['#tiles', 'Tiles'],
+		['#rules', 'Rules'],
+		['#controls', 'Controls'],
 		['#ai', 'How an AI plays'],
 		['#connect', 'Let an AI play'],
 		['#tips', 'Tips']
@@ -22,11 +22,11 @@
 	const tiles: [string, string, string][] = [
 		['o', 'Stone', 'Walkable. Everything that is not void is a stone-like tile you can stand on.'],
 		['.', 'Void', 'Empty space: you cannot enter it, and neither can you leave the level at its edge.'],
-		['S', 'Start', 'Where the miner begins, always on the bottom level (level 1). Reset brings you back here.'],
+		['S', 'Start', 'Where the miner begins, always on the bottom level (Level 1 on screen, level 0 in the API). Reset brings you back here.'],
 		['F', 'Finish', 'The cookie, always on the top level. Stepping on it wins the game.'],
 		['U', 'Stairs up', 'A blue ▲ stamp. Stepping on it lifts you to the same column and row on the level above, where you land on its paired ▼.'],
 		['D', 'Stairs down', 'A red ▼ stamp. Stepping on it drops you to the same column and row on the level below, where you land on its paired ▲.'],
-		['1–9', 'Portal', 'A coloured ring with its digit. Every digit used appears exactly twice in the tower; stepping on one teleports you to its twin, even on another level. A small “?” on a hole means its twin is on a level you cannot see.']
+		['1–9', 'Portal', 'A coloured ring with its digit. Every digit used appears exactly twice in the tower; stepping on one teleports you to its twin, always on the same level. Only stairs change level.']
 	];
 
 	const aiSteps: [string, string][] = [
@@ -41,18 +41,13 @@
 		['Arrival is safe', 'Landing on paired stairs or a portal exit never triggers it. Step off and back on to use it again.'],
 		['Stairs are two-way', 'Every ▲ has a ▼ at the same column and row one level up (and vice versa), so wherever you can climb you can come back down from the spot you landed on.'],
 		['Follow the pipe', 'On a level, a dotted line joins a portal to its twin when both are on it; a “?” badge means the twin is on a level you cannot see yet.'],
-		['Use the tower', 'The tower shows every level, START at the bottom, FINISH on top and a star on the miner’s level. Click a level you have already visited to look at it again without moving.'],
+		['Use the tower', 'The tower shows every level, START at the bottom, FINISH on top and a “You are here” marker on the miner’s level. Click a level you have already visited to look at it again without moving.'],
 		['Beat par', 'Par is the shortest possible route. The result dialog compares your moves with it, and the session keeps your best.'],
 		['Mind the budget', 'Reaching the move limit without finishing loses the game; reset and plan a shorter route.'],
 		['Effects never chain', 'Landing on stairs or a portal exit never triggers another effect on the same move, so you can plan each hop separately. A stairs tile always triggers when you step on it, so you cannot walk across one like a corridor.']
 	];
 
-	const keys: [string, string][] = [
-		['← ↑ ↓ →', 'Move one tile'],
-		['W A S D', 'Move one tile'],
-		['R', 'Reset the game'],
-		['Click a tile', 'Step onto a tile next to the miner']
-	];
+	const keys: [string, string][] = [...SHORTCUTS, ['Click a tile', 'Step onto a tile next to the miner']];
 </script>
 
 <svelte:head><title>{pageTitle('How it works')}</title></svelte:head>
@@ -73,17 +68,10 @@
 		</nav>
 	</section>
 
-	<section aria-labelledby="fog-h">
-		<h2 id="fog-h" class="text-xl font-semibold text-indigo-950">Fog of the tower</h2>
-		<ul class="mt-3 list-disc space-y-1 pl-5 text-slate-800">
-			<li>The board shows <strong>only the level you stand on</strong>. Nothing about the other levels is sent to your browser — not even to spectators — until the miner gets there.</li>
-			<li>The START is always on the <strong>bottom</strong> level and the FINISH on the <strong>top</strong> level, as the tower on the side shows. The map card on the home page previews only the first level.</li>
-			<li>This page remembers the levels the miner has already visited. Click one in the tower to look at it again; it is dimmed and labelled <em>remembered</em>, and the miner is not on it. Levels you have not visited yet show a “?”. Reloading the page forgets what was remembered.</li>
-		</ul>
-	</section>
 
-	<section aria-labelledby="tiles-h">
-		<h2 id="tiles-h" class="text-xl font-semibold text-indigo-950">The tiles</h2>
+
+	<section id="tiles" class="scroll-mt-6" aria-labelledby="tiles-h">
+		<h2 id="tiles-h" class="text-xl font-semibold text-indigo-950">Tiles</h2>
 		<ul class="mt-3 space-y-2">
 			{#each tiles as [glyph, name, text] (glyph)}
 				<li class="flex items-start gap-3 rounded-lg border border-indigo-100 bg-white p-3">
@@ -107,12 +95,19 @@
 		</p>
 	</section>
 
-	<section aria-labelledby="moves-h">
-		<h2 id="moves-h" class="text-xl font-semibold text-indigo-950">Moves, stairs, portals and limits</h2>
-		<ul class="mt-3 list-disc space-y-1 pl-5 text-slate-800">
+	<section id="rules" class="scroll-mt-6" aria-labelledby="rules-h">
+		<h2 id="rules-h" class="text-xl font-semibold text-indigo-950">Rules</h2>
+		<h3 class="mt-3 font-semibold text-indigo-950">Fog of the tower</h3>
+		<ul class="mt-2 list-disc space-y-1 pl-5 text-slate-800">
+			<li>The board shows <strong>only the level you stand on</strong>. Nothing about the other levels is sent to your browser — not even to spectators — until the miner gets there.</li>
+			<li>The START is always on the <strong>bottom</strong> level and the FINISH on the <strong>top</strong> level, as the tower on the side shows. The map card on the home page previews only the first level.</li>
+			<li>This page remembers the levels the miner has already visited. Click one in the tower to look at it again; it is dimmed and labelled <em>remembered</em>, and the miner is not on it. Levels you have not visited yet show a “?”. Reloading the page forgets what was remembered.</li>
+		</ul>
+		<h3 class="mt-5 font-semibold text-indigo-950">Moves, stairs, portals and limits</h3>
+		<ul class="mt-2 list-disc space-y-1 pl-5 text-slate-800">
 			<li>
 				<strong>Coordinates:</strong> <code>level</code> 0 is the bottom, <code>x</code> is the column and <code>y</code> the row; row 0 is the <em>top</em>, so
-				<strong>y grows downward</strong>. Up means <code>y − 1</code>, right <code>x + 1</code>, down <code>y + 1</code>, left <code>x − 1</code>.
+				<strong>y grows downward</strong>. Up means <code>y − 1</code>, right <code>x + 1</code>, down <code>y + 1</code>, left <code>x − 1</code>. The board numbers levels from 1 for people (“Level 2 of 4”) and shows the API index next to it (“API level 1”), which is what AI agents and the API use.
 			</li>
 			<li>Every successful move is counted. A move into void or off the edge is <strong>blocked</strong>: nothing changes and it is <strong>not counted</strong>.</li>
 			<li>Taking stairs or a portal is still one move. The tile you stepped on and the tile you land on are both added to your trail; the effect never chains into another one, and arriving on a stairs or portal tile does not trigger it — step off and back on to use it again.</li>
@@ -125,9 +120,9 @@
 		</ul>
 	</section>
 
-	<section aria-labelledby="keys-h">
+	<section id="controls" class="scroll-mt-6" aria-labelledby="keys-h">
 		<h2 id="keys-h" class="text-xl font-semibold text-indigo-950">Controls</h2>
-		<p class="mt-2 text-sm text-slate-800">Keyboard play works anywhere on the page except while typing in a text field. On touch screens use the d-pad under the board.</p>
+		<p class="mt-2 text-sm text-slate-800">Keyboard play works anywhere on the page except while typing in a text field. On touch screens use the d-pad in the Controls panel. Press <kbd class="rounded border border-indigo-200 bg-white px-1">?</kbd> on the play page for the list of shortcuts.</p>
 		<dl class="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
 			{#each keys as [k, d]}
 				<dt><kbd class="rounded border border-indigo-200 bg-white px-1.5">{k}</kbd></dt>
@@ -135,7 +130,7 @@
 			{/each}
 		</dl>
 		<p class="mt-2 text-sm text-slate-800">
-			The tower on the side lists every level with a star on the miner’s level and the START (bottom) and FINISH (top) labels. Click a level you have already visited to look at it again (read-only, marked remembered); the board jumps back to the miner on its next move.
+			The tower beside the board lists every level with a “You are here” marker on the miner’s level and the START (bottom) and FINISH (top) labels. Click a level you have already visited to look at it again (read-only, marked remembered); the board jumps back to the miner on its next move.
 		</p>
 	</section>
 
@@ -173,7 +168,7 @@
 	</section>
 
 	<section id="tips" class="scroll-mt-6" aria-labelledby="tips-h">
-		<h2 id="tips-h" class="text-xl font-semibold text-indigo-950">Tips that help</h2>
+		<h2 id="tips-h" class="text-xl font-semibold text-indigo-950">Tips</h2>
 		<div class="mt-3 grid gap-3 sm:grid-cols-2">
 			{#each tips as [title, desc]}
 				<div class="rounded-xl border border-indigo-100 bg-white p-4">

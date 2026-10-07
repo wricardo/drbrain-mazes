@@ -1,13 +1,26 @@
 <script lang="ts">
 	import { portalColor, tileKind } from '$lib/tower';
 
-	let { rows, levelCount = 1, label = '' }: { rows: string[]; levelCount?: number; label?: string } = $props();
+	let {
+		rows,
+		levelCount = 1,
+		label = '',
+		fit = false
+	}: {
+		rows: string[];
+		levelCount?: number;
+		label?: string;
+		/** Fit inside a square parent (map cards): wide maps fill its width, tall ones its height. */
+		fit?: boolean;
+	} = $props();
 
 	const width = $derived(rows.reduce((w, r) => Math.max(w, r.length), 0));
 	const height = $derived(rows.length);
+	// In a square parent, a width of (w/h)% makes a tall grid exactly as high as the square.
+	const fitWidth = $derived(width >= height ? 100 : (100 * width) / Math.max(1, height));
 </script>
 
-<div class="relative w-full max-w-[200px]">
+<div class="relative {fit ? '' : 'w-full max-w-[200px]'}" style={fit ? `width: ${fitWidth}%` : undefined}>
 	<div
 		class="grid gap-px overflow-hidden rounded-md bg-indigo-200 p-px"
 		style="aspect-ratio: {width || 1} / {height || 1}; grid-template-columns: repeat({width}, minmax(0, 1fr)); grid-template-rows: repeat({height}, minmax(0, 1fr))"

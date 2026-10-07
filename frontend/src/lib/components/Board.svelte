@@ -20,6 +20,7 @@
 		game = null,
 		lastEvent = null,
 		bumpKey = 0,
+		facing: facingOverride = null,
 		onmove
 	}: {
 		/** The level to draw: the miner's own (live) or a remembered one. */
@@ -30,6 +31,8 @@
 		lastEvent?: MoveEvent | null;
 		/** Changes on every server update so a repeated blocked move replays the bump. */
 		bumpKey?: number;
+		/** Direction the miner faces; overrides lastEvent (used while replaying a path). */
+		facing?: Direction | null;
 		/** When set, the tiles next to the miner are clickable. */
 		onmove?: (direction: Direction) => void;
 	} = $props();
@@ -45,7 +48,7 @@
 	const links = $derived(portalLinks(rows, view.portals));
 	const trail = $derived(trailOnLevel(game?.path ?? [], level));
 	const blocked = $derived(here && !!lastEvent && lastEvent.blocked && lastEvent.move === game?.moves);
-	const facing = $derived<Direction>(lastEvent?.direction ?? 'UP');
+	const facing = $derived<Direction>(facingOverride ?? lastEvent?.direction ?? 'UP');
 	const underMiner = $derived(here ? tileKind(rows[pos.y]?.[pos.x] ?? '.') : 'void');
 	const onStairs = $derived(underMiner === 'up' || underMiner === 'down');
 	const label = $derived(
@@ -104,7 +107,8 @@
 	);
 </script>
 
-<div class="w-full" style="max-width: {Math.max(280, width * 56)}px">
+<!-- As large as the column allows, but never taller than --board-max-h (default: most of the viewport). -->
+<div class="w-full" style="max-width: min(100%, calc(var(--board-max-h, calc(100vh - 220px)) * {width || 1} / {height || 1}))">
 	{#key level}
 		<svg
 			viewBox="0 0 {width * CELL} {height * CELL}"

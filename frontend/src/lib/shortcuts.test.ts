@@ -11,9 +11,10 @@ describe('keyToAction', () => {
 		expect(keyToAction({ key: 'A' })).toEqual({ type: 'move', direction: 'LEFT' });
 	});
 
-	it('maps R to reset and ignores other keys', () => {
+	it('maps R to reset, ? to help and ignores other keys', () => {
 		expect(keyToAction({ key: 'r' })).toEqual({ type: 'reset' });
 		expect(keyToAction({ key: 'R' })).toEqual({ type: 'reset' });
+		expect(keyToAction({ key: '?' })).toEqual({ type: 'help' });
 		expect(keyToAction({ key: 'Enter' })).toBeNull();
 		expect(keyToAction({ key: 'x' })).toBeNull();
 	});

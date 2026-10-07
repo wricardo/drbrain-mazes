@@ -9,7 +9,7 @@
 		onpeek
 	}: {
 		levelCount: number;
-		/** The level the miner is on (marked with a star). */
+		/** The level the miner is on (marked "you are here"). */
 		current: number;
 		/** The level drawn on the board (highlighted). */
 		viewing?: number;
@@ -31,12 +31,11 @@
 	const isKnown = (level: number) => !known || known.includes(level);
 </script>
 
-{#snippet face(level: number, isHere: boolean, explored: boolean)}
+{#snippet face(level: number, explored: boolean)}
 	<span aria-hidden="true">{explored ? level + 1 : '?'}</span>
-	{#if isHere}<span class="ml-1 text-amber-400" aria-hidden="true" data-testid="tower-star">★</span>{/if}
 {/snippet}
 
-<nav aria-label="Tower, {levelCount} {levelCount === 1 ? 'level' : 'levels'}" class="select-none rounded-xl border border-indigo-200 bg-white p-3" data-testid="tower">
+<nav aria-label="Tower, {levelCount} {levelCount === 1 ? 'level' : 'levels'}" class="w-fit shrink-0 select-none rounded-xl border border-indigo-200 bg-white p-2" data-testid="tower">
 	<ol class="flex flex-col">
 		{#each rows as r, i (r.level)}
 			{@const isHere = r.level === current}
@@ -51,7 +50,7 @@
 						<span class="h-3 w-1.5 rounded-sm bg-indigo-300"></span>
 					</div>
 				{/if}
-				<div class="flex items-center gap-2">
+				<div class="flex items-center gap-1.5">
 					{#if onpeek && explored}
 						<button
 							type="button"
@@ -61,7 +60,7 @@
 							data-testid="tower-level-{r.level}"
 							class="{ledge} {isViewing ? 'border-indigo-700 bg-indigo-600 text-white hover:bg-indigo-700' : 'border-indigo-300 bg-indigo-100 text-indigo-900 hover:bg-indigo-200'} cursor-pointer"
 						>
-							{@render face(r.level, isHere, explored)}
+							{@render face(r.level, explored)}
 						</button>
 					{:else}
 						<div
@@ -70,17 +69,27 @@
 							data-testid="tower-level-{r.level}"
 							class="{ledge} {!explored ? 'border-dashed border-indigo-200 bg-white text-indigo-300' : isViewing ? 'border-indigo-700 bg-indigo-600 text-white' : 'border-indigo-300 bg-indigo-100 text-indigo-900'}"
 						>
-							{@render face(r.level, isHere, explored)}
+							{@render face(r.level, explored)}
 						</div>
+					{/if}
+					<!-- Labels stacked in one column so the card stays narrow and the board gets the width. -->
+					<div class="flex flex-col items-start gap-0.5">
+					{#if isHere}
+						<span
+							class="whitespace-nowrap rounded-full bg-indigo-600 px-1.5 py-px text-[10px] font-bold uppercase leading-tight text-white"
+							aria-hidden="true"
+							data-testid="tower-here">◀ You are here</span
+						>
 					{/if}
 					{#if r.isStart || r.isFinish}
 						<span
-							class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide {r.isFinish
+							class="whitespace-nowrap rounded-full px-1.5 py-px text-[10px] font-bold uppercase leading-tight {r.isFinish
 								? 'bg-amber-100 text-amber-900'
 								: 'bg-emerald-100 text-emerald-900'}"
 							aria-hidden="true">{r.isFinish && r.isStart ? 'Start · Finish' : r.isFinish ? 'Finish' : 'Start'}</span
 						>
 					{/if}
+					</div>
 				</div>
 			</li>
 		{/each}
